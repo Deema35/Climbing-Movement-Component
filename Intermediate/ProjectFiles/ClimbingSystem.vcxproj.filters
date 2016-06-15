@@ -1,0 +1,64 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+	<ItemGroup>
+		<None Include="..\..\ClimbingSystem.uproject" />
+		<Filter Include="Source">
+			<UniqueIdentifier>{415BA7F9-7933-4AF2-B6FC-644AFA5A3BC1}</UniqueIdentifier>
+		</Filter>
+		<None Include="..\..\Source\ClimbingSystem.Target.cs">
+			<Filter>Source</Filter>
+		</None >
+		<None Include="..\..\Source\ClimbingSystemEditor.Target.cs">
+			<Filter>Source</Filter>
+		</None >
+		<Filter Include="Config">
+			<UniqueIdentifier>{24A62A3A-9554-41B0-AD22-8F48270D76B9}</UniqueIdentifier>
+		</Filter>
+		<None Include="..\..\Config\DefaultEditor.ini">
+			<Filter>Config</Filter>
+		</None >
+		<None Include="..\..\Config\DefaultEditorPerProjectUserSettings.ini">
+			<Filter>Config</Filter>
+		</None >
+		<None Include="..\..\Config\DefaultEngine.ini">
+			<Filter>Config</Filter>
+		</None >
+		<None Include="..\..\Config\DefaultGame.ini">
+			<Filter>Config</Filter>
+		</None >
+		<None Include="..\..\Config\DefaultInput.ini">
+			<Filter>Config</Filter>
+		</None >
+		<Filter Include="Source\ClimbingSystem">
+			<UniqueIdentifier>{FCF40444-4C2E-465D-AC90-5B4569DFF255}</UniqueIdentifier>
+		</Filter>
+		<ClCompile Include="..\..\Source\ClimbingSystem\ClimbingCharacter.cpp">
+			<Filter>Source\ClimbingSystem</Filter>
+		</ClCompile >
+		<ClInclude Include="..\..\Source\ClimbingSystem\ClimbingCharacter.h">
+			<Filter>Source\ClimbingSystem</Filter>
+		</ClInclude >
+		<ClCompile Include="..\..\Source\ClimbingSystem\ClimbingPawnMovementComponent.cpp">
+			<Filter>Source\ClimbingSystem</Filter>
+		</ClCompile >
+		<ClInclude Include="..\..\Source\ClimbingSystem\ClimbingPawnMovementComponent.h">
+			<Filter>Source\ClimbingSystem</Filter>
+		</ClInclude >
+		<None Include="..\..\Source\ClimbingSystem\ClimbingSystem.Build.cs">
+			<Filter>Source\ClimbingSystem</Filter>
+		</None >
+		<ClCompile Include="..\..\Source\ClimbingSystem\ClimbingSystem.cpp">
+			<Filter>Source\ClimbingSystem</Filter>
+		</ClCompile >
+		<ClInclude Include="..\..\Source\ClimbingSystem\ClimbingSystem.h">
+			<Filter>Source\ClimbingSystem</Filter>
+		</ClInclude >
+		<ClCompile Include="..\..\Source\ClimbingSystem\OverlapObject.cpp">
+			<Filter>Source\ClimbingSystem</Filter>
+		</ClCompile >
+		<ClInclude Include="..\..\Source\ClimbingSystem\OverlapObject.h">
+			<Filter>Source\ClimbingSystem</Filter>
+		</ClInclude >
+	</ItemGroup>
+</Project>

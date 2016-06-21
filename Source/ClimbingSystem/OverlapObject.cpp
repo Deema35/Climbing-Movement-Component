@@ -22,19 +22,19 @@ AZipLine::AZipLine()
 	Pivot->SetMobility(EComponentMobility::Static);
 	RootComponent = Pivot;
 	StartBase = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("StartBase"));
-	StartBase->AttachParent = Pivot;
+	StartBase->SetupAttachment(Pivot);
 	EndBase = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("EndBase"));
-	EndBase->AttachParent = Pivot;
+	EndBase->SetupAttachment(Pivot);
 	Spline = CreateDefaultSubobject<USplineComponent>(TEXT("Spline"));
-	Spline->AttachParent = Pivot;
+	Spline->SetupAttachment(Pivot);
 	EndBox = CreateDefaultSubobject<UBoxComponent>(TEXT(" EndBox"));
 	EndBox->bGenerateOverlapEvents = true;
-	EndBox->AttachParent = Pivot;
+	EndBox->SetupAttachment(Pivot);
 	EndBox->SetBoxExtent(FVector(30, 30, 0.5 * SplineHeight));
 
 #if WITH_EDITORONLY_DATA
 	ArrowComponent = CreateEditorOnlyDefaultSubobject<UArrowComponent>(TEXT("Arrow"));
-	ArrowComponent->AttachParent = Pivot;
+	ArrowComponent->SetupAttachment(Pivot);
 #endif
 	
 
@@ -74,7 +74,7 @@ void AZipLine::SetupSpline()
 	//remove spline mesh components to get to Spline->GetNumSplinePoints() - 1
 	for (int32 Index = SplineMeshComponentsNum - 1; Index >= Spline->GetNumberOfSplinePoints() - 1; --Index)
 	{
-		AddedSplineMeshComponents[Index]->DetachFromParent();
+		AddedSplineMeshComponents[Index]->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
 		AddedSplineMeshComponents[Index]->UnregisterComponent();
 	}
 
@@ -94,7 +94,7 @@ void AZipLine::SetupSpline()
 		AddedSplineMeshComponents[Index]->SetCollisionProfileName(FName("OverlapOnlyPawn"));
 		AddedSplineMeshComponents[Index]->CreationMethod = EComponentCreationMethod::UserConstructionScript;
 		AddedSplineMeshComponents[Index]->SetMobility(EComponentMobility::Movable);
-		AddedSplineMeshComponents[Index]->AttachParent = Spline;
+		AddedSplineMeshComponents[Index]->SetupAttachment(Spline);
 
 		AddedSplineMeshComponents[Index]->bCastDynamicShadow = false;
 		

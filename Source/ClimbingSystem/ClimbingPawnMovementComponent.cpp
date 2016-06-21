@@ -109,8 +109,6 @@ UClimbingPawnMovementComponent::UClimbingPawnMovementComponent(const class FObje
 	ClimbJumpVelocyty = 600;
 
 	MaxWalkSpeed = 500;
-	RunSpeed = 800;
-	RunDelay = 2;
 
 	UnderWallJumpZVelocyty = 700;
 	JumpZVelocity = 400;
@@ -128,9 +126,20 @@ UClimbingPawnMovementComponent::UClimbingPawnMovementComponent(const class FObje
 	ZipLineVelocyty = 800;
 	ZipLineJumpVelocyty = 600;
 
-	SlideVelocytyCurve.GetRichCurve()->AddKey(0, RunSpeed);
-	SlideVelocytyCurve.GetRichCurve()->AddKey(0.8, 0.625 * RunSpeed);
+	
+
+	RunVelocytyCurve.GetRichCurve()->AddKey(0, MaxWalkSpeed);
+	RunVelocytyCurve.GetRichCurve()->AddKey(1.3, 1.6 * MaxWalkSpeed);
+	RunVelocytyCurve.GetRichCurve()->AddKey(3, 1.8 * MaxWalkSpeed);
+
+	float MaxRunVelocyty;
+	float MinRunVelocyty;
+	RunVelocytyCurve.GetRichCurve()->GetValueRange(MinRunVelocyty, MaxRunVelocyty);
+
+	SlideVelocytyCurve.GetRichCurve()->AddKey(0, MaxRunVelocyty);
+	SlideVelocytyCurve.GetRichCurve()->AddKey(0.8, 0.625 * MaxRunVelocyty);
 	SlideVelocytyCurve.GetRichCurve()->AddKey(1.2, 0);
+	SlideThreshold = 0.75;
 
 	BlockInclinedSlide = true;
 	InclinedSlideAngle = 40;
@@ -160,6 +169,8 @@ void  UClimbingPawnMovementComponent::TickComponent(float DeltaTime, enum ELevel
 
 	if (ClimbingMode == EClimbingMode::CLIMB_None)
 	{
+		DefineRunSpeed(DeltaTime);
+
 		DefineClimbMode(); //Define Climb mode
 	}
 
@@ -321,44 +332,27 @@ void UClimbingPawnMovementComponent::DefineClimbMode()
 		SetClimbMode(EClimbingMode::CLIMB_InclinedSlide);
 	}
 
-	if (!bIsRun)
-	{
-		if (PawnOwner->InputComponent->GetAxisValue(TEXT("MoveForward")) > 0 && !Cast<AClimbingCharacter>(PawnOwner)->bIsCrouched && !IsFalling())
-		{
-			if (!GetWorld()->GetTimerManager().IsTimerActive(RunTimerHandle))
-			{
-				GetWorld()->GetTimerManager().SetTimer(RunTimerHandle, this, &UClimbingPawnMovementComponent::SetRun, RunDelay, false);
-			}
-
-		}
-		else
-		{
-			if (GetWorld()->GetTimerManager().IsTimerActive(RunTimerHandle))
-			{
-				GetWorld()->GetTimerManager().ClearTimer(RunTimerHandle);
-			}
-		}
-	}
-	else
-	{
-		float XYVelocyty = pow(pow(Velocity.X, 2) + pow(Velocity.Y, 2), 0.5);
-
-		if (XYVelocyty < 400)
-		{
-			bIsRun = false;
-		}
-	}
-
-	
-
-
-
-	
 }
 
-void UClimbingPawnMovementComponent::SetRun()
+void UClimbingPawnMovementComponent::DefineRunSpeed(float DeltaTime)
 {
-	bIsRun = true;
+	
+	if (PawnOwner->InputComponent->GetAxisValue(TEXT("MoveForward")) > 0 && !Cast<AClimbingCharacter>(PawnOwner)->bIsCrouched && !IsFalling() && MinRunTime < MaxRunTime)
+	{
+		MinRunTime += DeltaTime;
+		
+	}
+
+	float XYVelocyty = pow(pow(Velocity.X, 2) + pow(Velocity.Y, 2), 0.5);
+	float MaxRunVelocyty;
+	float MinRunVelocyty;
+
+	RunVelocytyCurve.GetRichCurve()->GetValueRange(MinRunVelocyty, MaxRunVelocyty);
+
+	if (XYVelocyty < MinRunVelocyty - 100 || Cast<AClimbingCharacter>(PawnOwner)->bIsCrouched) //This mean character stop
+	{
+		RunVelocytyCurve.GetRichCurve()->GetTimeRange(MinRunTime, MaxRunTime);
+	}	
 }
 
 void UClimbingPawnMovementComponent::SetClimbMode(EClimbingMode _ClimbingMode)
@@ -418,6 +412,7 @@ bool UClimbingPawnMovementComponent::SetMode(EClimbingMode ClimbingMode)
 		if (!CheckDeltaVectorInCurrentState(StartPosition, StartRotation)) return false;
 
 		MoveTo(StartPosition, StartRotation);
+		if (ClimbingChar->bFistPirsonView) UGameplayStatics::GetPlayerController(GetWorld(), 0)->SetControlRotation(ClimbingChar->GetActorRotation());
 		PawnOwner->bUseControllerRotationYaw = false;
 		bOrientRotationToMovement = false;
 
@@ -438,6 +433,7 @@ bool UClimbingPawnMovementComponent::SetMode(EClimbingMode ClimbingMode)
 		if (!CheckDeltaVectorInCurrentState(StartPosition, StartRotation)) return false;
 
 		MoveTo(StartPosition, StartRotation);
+		if (ClimbingChar->bFistPirsonView) UGameplayStatics::GetPlayerController(GetWorld(), 0)->SetControlRotation(ClimbingChar->GetActorRotation());
 		PawnOwner->bUseControllerRotationYaw = false;
 		bOrientRotationToMovement = false;
 
@@ -447,6 +443,7 @@ bool UClimbingPawnMovementComponent::SetMode(EClimbingMode ClimbingMode)
 	{
 		if (!CheckDeltaVectorInCurrentState(StartPosition, StartRotation)) return false;
 		MoveTo(StartPosition, StartRotation);
+		if (ClimbingChar->bFistPirsonView) UGameplayStatics::GetPlayerController(GetWorld(), 0)->SetControlRotation(ClimbingChar->GetActorRotation());
 		PawnOwner->bUseControllerRotationYaw = false;
 		bOrientRotationToMovement = false;
 		
@@ -622,7 +619,13 @@ bool UClimbingPawnMovementComponent::CanSetClimbMode(EClimbingMode ClimbingMode)
 	}
 	case EClimbingMode::CLIMB_Slide:
 	{
-		if (!IsFalling() && bIsRun)
+		float XYVelocyty = pow(pow(Velocity.X, 2) + pow(Velocity.Y, 2), 0.5);
+		float MaxVelocyty;
+		float MinVelocyty;
+
+		RunVelocytyCurve.GetRichCurve()->GetValueRange(MinVelocyty, MaxVelocyty);
+		float ThresholdVel = SlideThreshold * (MaxVelocyty - MinVelocyty) + MinVelocyty;
+		if (!IsFalling() && XYVelocyty > ThresholdVel)
 		{
 			return true;
 		}
@@ -1037,14 +1040,17 @@ bool UClimbingPawnMovementComponent::DoJump(bool bReplayingMoves)
 
 float UClimbingPawnMovementComponent::GetMaxSpeed() const
 {
-	float MaxSpeed = Super::GetMaxSpeed();
+	float MaxSpeed;
 	
 	
-	if (bIsRun)
+	if (MovementMode == EMovementMode::MOVE_Walking || MovementMode == EMovementMode::MOVE_NavWalking || MovementMode == EMovementMode::MOVE_Falling)
 	{
-		MaxSpeed = RunSpeed;
+		MaxSpeed = RunVelocytyCurve.GetRichCurveConst()->Eval(MinRunTime);
 	}
-		
+	else
+	{
+		MaxSpeed = Super::GetMaxSpeed();
+	}
 	return MaxSpeed;
 }
 

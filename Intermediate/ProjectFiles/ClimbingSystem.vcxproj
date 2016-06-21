@@ -44,7 +44,7 @@
 		</ProjectConfiguration>
 	</ItemGroup>
 	<PropertyGroup Label="Globals">
-		<ProjectGuid>{EBB36008-1E04-4E02-A044-310699FEB9AC}</ProjectGuid>
+		<ProjectGuid>{D7877287-2E20-4437-86BA-547E31B40DCF}</ProjectGuid>
 		<Keyword>MakeFileProj</Keyword>
 		<RootNamespace>ClimbingSystem</RootNamespace>
        <PlatformToolset>v140</PlatformToolset>

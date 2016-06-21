@@ -29,13 +29,13 @@ AClimbingCharacter::AClimbingCharacter(const FObjectInitializer& ObjectInitializ
 
 	//Add Camera
 	CameraSpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraSpringArm"));
-	CameraSpringArm->AttachTo(RootComponent);
+	CameraSpringArm->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);
 	CameraSpringArm->SetRelativeLocationAndRotation(FVector(0.0f, 0.0f, 8.0f), FRotator(0.0f, 0.0f, 0.0f));
 	CameraSpringArm->TargetArmLength = 300.f;
 	CameraSpringArm->bUsePawnControlRotation = true;
 	
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("ClimbCamera"));
-	Camera->AttachTo(CameraSpringArm, USpringArmComponent::SocketName);
+	Camera->AttachToComponent(CameraSpringArm, FAttachmentTransformRules::KeepRelativeTransform, USpringArmComponent::SocketName);
 	Camera->bUsePawnControlRotation = true;
 	bUseControllerRotationYaw = false;
 
@@ -231,8 +231,8 @@ void AClimbingCharacter::ChangeView(bool FistPirson)
 
 	if (FistPirson)
 	{
-		Camera->DetachFromParent();
-		Camera->AttachTo(ClimbMesh, FName("head"), EAttachLocation::KeepRelativeOffset);
+		Camera->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
+		Camera->AttachToComponent(ClimbMesh, FAttachmentTransformRules::KeepRelativeTransform, FName("head"));
 		UGameplayStatics::GetPlayerController(GetWorld(), 0)->SetControlRotation(GetActorRotation());
 		Camera->SetRelativeLocation(FVector(0, 10, 0));
 		bFistPirsonView = true;
@@ -246,8 +246,8 @@ void AClimbingCharacter::ChangeView(bool FistPirson)
 	}
 	else
 	{
-		Camera->DetachFromParent();
-		Camera->AttachTo(CameraSpringArm, FName("SpringEndpoint"), EAttachLocation::KeepRelativeOffset);
+		Camera->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
+		Camera->AttachToComponent(CameraSpringArm, FAttachmentTransformRules::SnapToTargetNotIncludingScale, FName("SpringEndpoint"));
 		bFistPirsonView = false;
 		if (ClimbingMovement->GetClimbingMode() != EClimbingMode::CLIMB_Climb)
 		{

@@ -2,13 +2,13 @@
 	"TargetName" : "ClimbingSystemEditor",
 	"Platform" : "Win64",
 	"Configuration" : "Development",
-	"BuildId" : "7a236560-5be0-4dea-8ecf-ba77f36af912",
+	"BuildId" : "524a8e54-cb99-4491-8dc9-0f3bb67263ee",
 	"Version" : 
 	{
 		"MajorVersion" : 4,
 		"MinorVersion" : 12,
-		"PatchVersion" : 2,
-		"Changelist" : 3005592,
+		"PatchVersion" : 3,
+		"Changelist" : 3013449,
 		"IsLicenseeVersion" : 0,
 		"BranchName" : "++UE4+Release-4.12"
 	},

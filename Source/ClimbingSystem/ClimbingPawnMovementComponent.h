@@ -128,18 +128,21 @@ public:
 
 	/*Velocyty of Run movement*/
 	UPROPERTY(Category = "ClimbingMovement", EditAnywhere, BlueprintReadWrite)
-		float RunSpeed;
+		FRuntimeFloatCurve RunVelocytyCurve;
 
-	/*delay before Run movement in sec*/
+	/*Velocyty of Slide movement*/
 	UPROPERTY(Category = "ClimbingMovement", EditAnywhere, BlueprintReadWrite)
-		float RunDelay;
+		FRuntimeFloatCurve SlideVelocytyCurve;
+
+	/*Threshold velocyty when char can Slide.*/
+	UPROPERTY(Category = "ClimbingMovement", EditAnywhere, BlueprintReadWrite)
+		float SlideThreshold;
 
 	/*Velocyty of jump near wall*/
 	UPROPERTY(Category = "ClimbingMovement", EditAnywhere, BlueprintReadWrite)
 		float UnderWallJumpZVelocyty;
 
-	UPROPERTY(Category = "ClimbingMovement", EditAnywhere, BlueprintReadWrite)
-		FRuntimeFloatCurve SlideVelocytyCurve;
+	
 
 
 	/*UCharacterMovementComponent Interfase*/
@@ -151,16 +154,20 @@ public:
 private:
 	EClimbingMode ClimbingMode;
 	EClimbingMode LastClimbingMode;
+
 	bool BlockClimb;
 	bool BlockWallRun;
 	bool BlockInclinedSlide;
-	FTimerHandle RunTimerHandle;
-	bool bIsRun;
+
+	float MinRunTime;
+	float MaxRunTime;
+
 	float MinSlideTime;
 	float MaxSlideTime;
-	FTimerHandle InclinedSlideTimerHandle;
+
+	FTimerHandle InclinedSlideTimerHandle; 
 	
-	void SetRun();
+	void DefineRunSpeed(float DeltaTime);
 	void DefineClimbMode();
 	bool SetMode(EClimbingMode ClimbingMode);
 	void UnSetMode(EClimbingMode ClimbingMode);

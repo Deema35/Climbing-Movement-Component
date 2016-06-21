@@ -1,3 +1,3 @@
-F:\ClimbingSystem\Source\ClimbingSystem\ClimbingSystem.Build.cs
-F:\ClimbingSystem\Source\ClimbingSystem.Target.cs
-F:\ClimbingSystem\Source\ClimbingSystemEditor.Target.cs
+F:\Climb\Climbing-Movement-Component\Source\ClimbingSystem\ClimbingSystem.Build.cs
+F:\Climb\Climbing-Movement-Component\Source\ClimbingSystem.Target.cs
+F:\Climb\Climbing-Movement-Component\Source\ClimbingSystemEditor.Target.cs

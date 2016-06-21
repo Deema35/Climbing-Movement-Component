@@ -4,7 +4,7 @@
 	<ItemGroup>
 		<None Include="..\..\ClimbingSystem.uproject" />
 		<Filter Include="Source">
-			<UniqueIdentifier>{415BA7F9-7933-4AF2-B6FC-644AFA5A3BC1}</UniqueIdentifier>
+			<UniqueIdentifier>{E36A941B-4F19-4103-8A68-84BEBC970E9B}</UniqueIdentifier>
 		</Filter>
 		<None Include="..\..\Source\ClimbingSystem.Target.cs">
 			<Filter>Source</Filter>
@@ -13,7 +13,7 @@
 			<Filter>Source</Filter>
 		</None >
 		<Filter Include="Config">
-			<UniqueIdentifier>{24A62A3A-9554-41B0-AD22-8F48270D76B9}</UniqueIdentifier>
+			<UniqueIdentifier>{39828D7E-DA37-4CE7-AC16-6BEC4E55E28D}</UniqueIdentifier>
 		</Filter>
 		<None Include="..\..\Config\DefaultEditor.ini">
 			<Filter>Config</Filter>
@@ -31,7 +31,7 @@
 			<Filter>Config</Filter>
 		</None >
 		<Filter Include="Source\ClimbingSystem">
-			<UniqueIdentifier>{FCF40444-4C2E-465D-AC90-5B4569DFF255}</UniqueIdentifier>
+			<UniqueIdentifier>{41998872-4FB5-467D-8E55-D80AA5339643}</UniqueIdentifier>
 		</Filter>
 		<ClCompile Include="..\..\Source\ClimbingSystem\ClimbingCharacter.cpp">
 			<Filter>Source\ClimbingSystem</Filter>

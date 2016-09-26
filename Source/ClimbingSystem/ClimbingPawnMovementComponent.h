@@ -6,11 +6,19 @@
 #include "Runtime/Engine/Classes/Kismet/KismetSystemLibrary.h"
 #include "ClimbingPawnMovementComponent.generated.h"
 
+enum class EDrawDebugTraceType
+{
+	None,
+	ForOneFrame,
+	ForDuration,
+	Persistent
+};
+
 class Lib
 {
 public:
-	static bool TraceLine(UWorld* World, AActor* ActorToIgnore, const FVector& Start, const FVector& End, FHitResult& HitOut, EDrawDebugTrace::Type DrawDebugType = EDrawDebugTrace::None, ECollisionChannel CollisionChannel = ECC_Pawn, bool ReturnPhysMat = false);
-	static bool TraceLine(UWorld* World, AActor* ActorToIgnore, const FVector& Start, const FVector& End, EDrawDebugTrace::Type DrawDebugType = EDrawDebugTrace::None, ECollisionChannel CollisionChannel = ECC_Pawn, bool ReturnPhysMat = false);
+	static bool TraceLine(UWorld* World, AActor* ActorToIgnore, const FVector& Start, const FVector& End, FHitResult& HitOut, EDrawDebugTraceType DrawDebugType = EDrawDebugTraceType::None, ECollisionChannel CollisionChannel = ECC_Pawn, bool ReturnPhysMat = false);
+	static bool TraceLine(UWorld* World, AActor* ActorToIgnore, const FVector& Start, const FVector& End, EDrawDebugTraceType DrawDebugType = EDrawDebugTraceType::None, ECollisionChannel CollisionChannel = ECC_Pawn, bool ReturnPhysMat = false);
 	static float VectorXYAngle(FVector V1, FVector V2);
 	static void Msg(FVector Vector, bool OnScreen = true, bool OnLog = false);
 	static void Msg(FString Message, bool OnScreen = true, bool OnLog = false);
@@ -19,7 +27,7 @@ public:
 };
 
 UENUM(BlueprintType)
-enum EClimbingMode
+enum class EClimbingMode
 {
 
 	CLIMB_None		UMETA(DisplayName = "None"),
@@ -35,7 +43,7 @@ enum EClimbingMode
 
 	/** Slide on ground */
 	CLIMB_Slide	UMETA(DisplayName = "Slide"),
-
+	/** Lift on barer*/
 	CLIMB_JumpOverBarier	UMETA(DisplayName = "JumpOverBarier"),
 
 	CLIMB_UnderWallJump UMETA(DisplayName = "UnderWallJump"),
@@ -43,6 +51,10 @@ enum EClimbingMode
 	CLIMB_ZipLine UMETA(DisplayName = "ZipLine"),
 	/*Slide from inclined surfase*/
 	CLIMB_InclinedSlide UMETA(DisplayName = "InclinedSlide"),
+	/*Lift On wall from climb*/
+	CLIMB_LiftOnWall UMETA(DisplayName = "InclinedSlide"),
+	/*Rounding The Corner when character climbing*/
+	CLIMB_RoundingTheCorner UMETA(DisplayName = "RoundingTheCorner"),
 
 	CLIMB_MAX	UMETA(DisplayName = "Hide")
 
@@ -65,7 +77,11 @@ public:
 	UFUNCTION(BlueprintPure, Category = "ClimbingMovement")
 	bool CanSetClimbMode(EClimbingMode ClimbingMode);
 
-	/*Offset from top of climbing surfase*/
+	/*Height (from charecter locztion.z) where charector natch surface*/
+	UPROPERTY(Category = "ClimbingMovement|Climb", EditAnywhere, BlueprintReadWrite)
+		int32 ClimbSnatchHeight;
+
+	/*Offset betvin top of climbing surfase and charecter location.z*/
 	UPROPERTY(Category = "ClimbingMovement|Climb", EditAnywhere, BlueprintReadWrite)
 		int32 ClimbDeltaZ;
 
@@ -77,9 +93,17 @@ public:
 	UPROPERTY(Category = "ClimbingMovement|Climb", EditAnywhere, BlueprintReadWrite)
 		float ClimbJumpVelocyty;
 
-	/*Angle from center when state can change in degres*/
-	UPROPERTY(Category = "ClimbingMovement|WallRun", EditAnywhere, BlueprintReadWrite)
-		float WallRunLimitAngle;
+	/*Velocyty lift on plane*/
+	UPROPERTY(Category = "ClimbingMovement|LiftOnWall", EditAnywhere, BlueprintReadWrite)
+		float ClimbLiftVelocyty;
+
+	/*Height (from charecter locztion.z) where jump over barier is work*/
+	UPROPERTY(Category = "ClimbingMovement|JumpOverBarier", EditAnywhere, BlueprintReadWrite)
+		int32 JumpOverBarierDeltaJumpHeght;
+
+	/*Minimal Velocyty lifting on barier (if character velocyty less then this)*/
+	UPROPERTY(Category = "ClimbingMovement|JumpOverBarier", EditAnywhere, BlueprintReadWrite)
+		int32 JumpOverBarierMinLiftVelocyty;
 
 	/*Offset from Wall when Wall Run*/
 	UPROPERTY(Category = "ClimbingMovement|WallRun", EditAnywhere, BlueprintReadWrite)
@@ -125,6 +149,12 @@ public:
 
 	UPROPERTY(Category = "ClimbingMovement|InclinedSlide", EditAnywhere, BlueprintReadWrite)
 		float InclinedJumpVelocyty;
+	
+	UPROPERTY(Category = "ClimbingMovement|RoundingTheCorner", EditAnywhere, BlueprintReadWrite)
+		float RoundingTheCornerVelocyty;
+
+	UPROPERTY(Category = "ClimbingMovement|RoundingTheCorner", EditAnywhere, BlueprintReadWrite)
+		float RoundingTheCornerRotationVelocyty;
 
 	/*Velocyty of Run movement*/
 	UPROPERTY(Category = "ClimbingMovement", EditAnywhere, BlueprintReadWrite)
@@ -144,6 +174,8 @@ public:
 
 	
 
+	
+
 
 	/*UCharacterMovementComponent Interfase*/
 	virtual bool DoJump(bool bReplayingMoves) override;
@@ -158,6 +190,7 @@ private:
 	bool BlockClimb;
 	bool BlockWallRun;
 	bool BlockInclinedSlide;
+	bool BlockJumpOverBarier;
 
 	float MinRunTime;
 	float MaxRunTime;
@@ -173,10 +206,27 @@ private:
 	void UnSetMode(EClimbingMode ClimbingMode);
 	void UnBlockInclinedSlide();
 	void UnblockClimbState();
+	void UnblockBlockJumpOverBarierState();
 	void UnblockWallRunState();
 	bool CheckDeltaVectorInCurrentState(const FVector& InputDeltaVector, FVector& CheckDeltaVector, FRotator& CheckRotation); //Check climb is possibly from Approximate coordinate and return realy coordinate
 	bool CheckDeltaVectorInCurrentState(FVector& CheckDeltaVector, FRotator& CheckRotation); //Check climb is possibly in current character location coordinate and return realy coordinate
 	bool CheckDeltaVectorInCurrentState();//Check climb is possibly in current character location without return new coordinates
 	void MoveTo(const FVector& Delta, const FRotator& NewRotation);
+	float GetYawCharacterFromWall(FHitResult HitResult);
 	
+	enum class ERoundingTheCornerState
+	{
+		FistMove,
+		Rotate,
+		SecondMove
+	};
+	struct FRoundingTheCornerData
+	{
+		ERoundingTheCornerState State;
+		bool MovementDirection; //True - right false - left
+		float TraceLineZ;
+		float RotateAngle;
+	};
+
+	FRoundingTheCornerData RoundingTheCornerData;
 };

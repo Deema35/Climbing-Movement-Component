@@ -10,13 +10,13 @@ class CLIMBINGSYSTEM_API AOverlapObject : public AActor
 {
 	GENERATED_BODY()
 public:
-	enum EClimbingMode GetObjectType() const;
+	enum class EClimbingMode GetObjectType() const;
 
 	
 
 protected:
 	UPROPERTY(Category = ObjectType, VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	TEnumAsByte<enum EClimbingMode> ObjectType;
+	TEnumAsByte<EClimbingMode> ObjectType;
 	
 };
 

@@ -3,17 +3,17 @@
 #include "ClimbingSystem.h"
 #include "ClimbingPawnMovementComponent.h"
 #include "ClimbingCharacter.h"
-#include "Runtime/Engine/Classes/Kismet/KismetMathLibrary.h"
 #include "OverlapObject.h"
-#include "Runtime/Engine/Classes/Components/SplineComponent.h"
+#include "Components/SplineComponent.h"
+#include "Kismet/KismetMathLibrary.h"
 
 
-bool Lib::TraceLine(UWorld* World, AActor* ActorToIgnore, const FVector& Start, const FVector& End, EDrawDebugTrace::Type DrawDebugType, ECollisionChannel CollisionChannel, bool ReturnPhysMat)
+bool Lib::TraceLine(UWorld* World, AActor* ActorToIgnore, const FVector& Start, const FVector& End, EDrawDebugTraceType DrawDebugType, ECollisionChannel CollisionChannel, bool ReturnPhysMat)
 {
 	FHitResult HitOut;
 	return TraceLine(World, ActorToIgnore, Start, End, HitOut, DrawDebugType, CollisionChannel, ReturnPhysMat);
 }
-bool Lib::TraceLine(UWorld* World, AActor* ActorToIgnore, const FVector& Start, const FVector& End, FHitResult& HitOut, EDrawDebugTrace::Type DrawDebugType, ECollisionChannel CollisionChannel, bool ReturnPhysMat)
+bool Lib::TraceLine(UWorld* World, AActor* ActorToIgnore, const FVector& Start, const FVector& End, FHitResult& HitOut, EDrawDebugTraceType DrawDebugType, ECollisionChannel CollisionChannel, bool ReturnPhysMat)
 {
 	if (!World)
 	{
@@ -41,7 +41,7 @@ bool Lib::TraceLine(UWorld* World, AActor* ActorToIgnore, const FVector& Start, 
 		TraceParams
 		);
 
-	if (DrawDebugType == EDrawDebugTrace::ForOneFrame)
+	if (DrawDebugType == EDrawDebugTraceType::ForOneFrame)
 	{
 		DrawDebugLine(World, Start, HitOut.bBlockingHit ? HitOut.Location : End, FColor::Red, false, -1.f, SDPG_World, 2.f);
 		if (HitOut.bBlockingHit)
@@ -50,7 +50,7 @@ bool Lib::TraceLine(UWorld* World, AActor* ActorToIgnore, const FVector& Start, 
 			DrawDebugLine(World, HitOut.Location, End, FColor::Green, false, -1.f, SDPG_World, 2.f);
 		}
 	}
-	else if (DrawDebugType == EDrawDebugTrace::ForDuration)
+	else if (DrawDebugType == EDrawDebugTraceType::ForDuration)
 	{
 		float DrawTime = 2.f;
 		DrawDebugLine(World, Start, HitOut.bBlockingHit ? HitOut.Location : End, FColor::Red, false, DrawTime, SDPG_World, 2.f);
@@ -60,7 +60,7 @@ bool Lib::TraceLine(UWorld* World, AActor* ActorToIgnore, const FVector& Start, 
 			DrawDebugLine(World, HitOut.Location, End, FColor::Green, false, DrawTime, SDPG_World, 2.f);
 		}
 	}
-	else if (DrawDebugType == EDrawDebugTrace::Persistent)
+	else if (DrawDebugType == EDrawDebugTraceType::Persistent)
 	{
 		DrawDebugLine(World, Start, HitOut.bBlockingHit ? HitOut.Location : End, FColor::Red, true, -1.f, SDPG_World, 2.f);
 		if (HitOut.bBlockingHit)
@@ -103,10 +103,15 @@ void Lib::Msg(float Message, bool OnScreen, bool OnLog)
 
 UClimbingPawnMovementComponent::UClimbingPawnMovementComponent(const class FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
-	
+
+	ClimbSnatchHeight = 70;
 	ClimbDeltaZ = -50;
 	ClimbVelocyty = 150;
 	ClimbJumpVelocyty = 600;
+
+	ClimbLiftVelocyty = 500;
+
+	JumpOverBarierDeltaJumpHeght = 0;
 
 	MaxWalkSpeed = 500;
 
@@ -117,7 +122,6 @@ UClimbingPawnMovementComponent::UClimbingPawnMovementComponent(const class FObje
 
 	WallRunJumpZVelocyty = 600;
 	WallOffset = 50;
-	WallRunLimitAngle = 0;
 	WallRunFallGravityScale = 0.2;
 	WallRunInputVelocyty = 3;
 	WallRunJumpVelocyty = 600;
@@ -125,6 +129,9 @@ UClimbingPawnMovementComponent::UClimbingPawnMovementComponent(const class FObje
 	ZipLineDeltaZ = -90;
 	ZipLineVelocyty = 800;
 	ZipLineJumpVelocyty = 600;
+
+	RoundingTheCornerVelocyty = 300;
+	RoundingTheCornerRotationVelocyty = 400;
 
 	
 
@@ -187,7 +194,14 @@ void  UClimbingPawnMovementComponent::TickComponent(float DeltaTime, enum ELevel
 			if (CheckDeltaVectorInCurrentState(DesiredMovementThisFrame, NewPosition, NewRotation))
 			{
 				MoveTo(NewPosition, NewRotation);
+				
 			}
+			else if (CanSetClimbMode(EClimbingMode::CLIMB_RoundingTheCorner))
+			{
+				SetClimbMode(EClimbingMode::CLIMB_RoundingTheCorner);
+				return;
+			}
+			
 		}
 		break;
 	}
@@ -232,16 +246,49 @@ void  UClimbingPawnMovementComponent::TickComponent(float DeltaTime, enum ELevel
 
 	case EClimbingMode::CLIMB_JumpOverBarier:
 	{
-		if (!CheckDeltaVectorInCurrentState())
+		FVector NewAdjusted;
+		FRotator NewRotation;
+		FVector Adjusted;
+		Velocity.Z = 0;
+		if (Velocity.Size() > JumpOverBarierMinLiftVelocyty)
+		{
+			Adjusted = Velocity * DeltaTime;
+			Adjusted.Z = Velocity.Size() * DeltaTime;
+		}
+		else
+		{
+			Adjusted = PawnOwner->GetActorForwardVector() * JumpOverBarierMinLiftVelocyty * DeltaTime;
+			Adjusted.Z = JumpOverBarierMinLiftVelocyty * DeltaTime;
+		}
+
+		if (!CheckDeltaVectorInCurrentState(Adjusted, NewAdjusted, NewRotation))
 		{
 			SetClimbMode(EClimbingMode::CLIMB_None);
 			return;
 		}
 
-		Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+		MoveTo(NewAdjusted, NewRotation);
 		break;
 	}
 
+	case EClimbingMode::CLIMB_LiftOnWall:
+	{
+		FVector NewAdjusted;
+		FRotator NewRotation;
+		FVector Adjusted;
+		
+		Adjusted = PawnOwner->GetActorForwardVector() * ClimbLiftVelocyty * DeltaTime;
+		Adjusted.Z = ClimbLiftVelocyty * DeltaTime;
+
+		if (!CheckDeltaVectorInCurrentState(Adjusted, NewAdjusted, NewRotation))
+		{
+			SetClimbMode(EClimbingMode::CLIMB_None);
+			return;
+		}
+
+		MoveTo(NewAdjusted, NewRotation);
+		break;
+	}
 	
 
 	case EClimbingMode::CLIMB_Slide:
@@ -301,7 +348,25 @@ void  UClimbingPawnMovementComponent::TickComponent(float DeltaTime, enum ELevel
 		
 		MoveTo(NewPosition, NewRotation);
 
-	
+		break;
+	}
+	case EClimbingMode::CLIMB_RoundingTheCorner:
+	{
+		FVector NewAdjusted;
+		FRotator NewRotation;
+		FVector Adjusted;
+
+		Adjusted.X = RoundingTheCornerVelocyty * DeltaTime;
+		Adjusted.Y = RoundingTheCornerRotationVelocyty * DeltaTime;
+		if (!CheckDeltaVectorInCurrentState(Adjusted, NewAdjusted, NewRotation))
+		{
+			
+			SetClimbMode(EClimbingMode::CLIMB_Climb);
+			
+			return;
+		}
+
+		MoveTo(NewAdjusted, NewRotation);
 
 		break;
 	}
@@ -315,9 +380,13 @@ void  UClimbingPawnMovementComponent::TickComponent(float DeltaTime, enum ELevel
 void UClimbingPawnMovementComponent::DefineClimbMode()
 {
 	
-	if (CanSetClimbMode(EClimbingMode::CLIMB_Climb))
+	if (IsFalling() && CanSetClimbMode(EClimbingMode::CLIMB_Climb))
 	{
 		SetClimbMode(EClimbingMode::CLIMB_Climb);
+	}
+	else if (IsFalling() && CanSetClimbMode(EClimbingMode::CLIMB_JumpOverBarier))
+	{
+		SetClimbMode(EClimbingMode::CLIMB_JumpOverBarier);
 	}
 	else if (IsFalling() && CanSetClimbMode(EClimbingMode::CLIMB_LeftWallRun))
 	{
@@ -401,10 +470,6 @@ bool UClimbingPawnMovementComponent::SetMode(EClimbingMode ClimbingMode)
 		Velocity = FVector(0, 0, 0);
 		break;
 	}
-	case EClimbingMode::CLIMB_JumpOverBarier:
-
-		Cast<AClimbingCharacter>(PawnOwner)->ClimbCapsule->SetCapsuleHalfHeight(30);
-		break;
 
 	case EClimbingMode::CLIMB_LeftWallRun:
 	case EClimbingMode::CLIMB_RightWallRun:
@@ -450,6 +515,30 @@ bool UClimbingPawnMovementComponent::SetMode(EClimbingMode ClimbingMode)
 		break;
 	
 	}
+	case EClimbingMode::CLIMB_RoundingTheCorner:
+	{
+		PawnOwner->bUseControllerRotationYaw = false;
+		bOrientRotationToMovement = false;
+
+		if (PawnOwner->InputComponent->GetAxisValue(TEXT("MoveRight")) > 0)
+		{
+			RoundingTheCornerData.MovementDirection = true;
+		}
+		else
+		{
+			RoundingTheCornerData.MovementDirection = false;
+		}
+
+		FHitResult TopHitResult;
+		FVector TopStart = PawnOwner->GetActorLocation() + FVector(0, 0, 97) + PawnOwner->GetActorForwardVector() * 60;
+		FVector TopEnd = PawnOwner->GetActorLocation() + FVector(0, 0, -97) + PawnOwner->GetActorForwardVector() * 60;
+		Lib::TraceLine(GetWorld(), PawnOwner, TopStart, TopEnd, TopHitResult);
+
+		RoundingTheCornerData.State = ERoundingTheCornerState::FistMove;
+		RoundingTheCornerData.TraceLineZ = TopHitResult.ImpactPoint.Z - 10 - PawnOwner->GetActorLocation().Z;
+		RoundingTheCornerData.RotateAngle = 0;
+	}
+
 	}
 
 	return true;
@@ -480,10 +569,27 @@ void UClimbingPawnMovementComponent::UnSetMode(EClimbingMode ClimbingMode)
 		GetWorld()->GetTimerManager().SetTimer(BlockTimerHandle, this, &UClimbingPawnMovementComponent::UnblockWallRunState, 0.5, false);
 		break;
 	}
-	case EClimbingMode::CLIMB_JumpOverBarier:
 
-		Cast<AClimbingCharacter>(PawnOwner)->ClimbCapsule->SetCapsuleHalfHeight(96);
+	case EClimbingMode::CLIMB_JumpOverBarier:
+	{
+		BlockJumpOverBarier = true;
+		FTimerHandle BlockTimerHandle;
+		GetWorld()->GetTimerManager().SetTimer(BlockTimerHandle, this, &UClimbingPawnMovementComponent::UnblockBlockJumpOverBarierState, 0.5, false);
+		if (Velocity.Size() < JumpOverBarierMinLiftVelocyty)
+		{
+			Velocity = PawnOwner->GetActorForwardVector() * JumpOverBarierMinLiftVelocyty;
+		}
 		break;
+	}
+
+	case EClimbingMode::CLIMB_LiftOnWall:
+	{
+		if (Velocity.Size() < JumpOverBarierMinLiftVelocyty)
+		{
+			Velocity = PawnOwner->GetActorForwardVector() * ClimbLiftVelocyty;
+		}
+		break;
+	}
 
 	case EClimbingMode::CLIMB_Slide:
 	{
@@ -506,6 +612,12 @@ void UClimbingPawnMovementComponent::UnSetMode(EClimbingMode ClimbingMode)
 		MoveTo(FVector(0), NewRot);
 		break;
 	}
+	case EClimbingMode::CLIMB_RoundingTheCorner:
+	{
+		PawnOwner->bUseControllerRotationYaw = ClimbingChar->bFistPirsonView;
+		bOrientRotationToMovement = true;
+		break;
+	}
 
 	}
 }
@@ -520,6 +632,11 @@ void UClimbingPawnMovementComponent::UnblockWallRunState()
 	BlockWallRun = false;
 }
 
+void UClimbingPawnMovementComponent::UnblockBlockJumpOverBarierState()
+{
+	BlockJumpOverBarier = false;
+}
+
 bool UClimbingPawnMovementComponent::CanSetClimbMode(EClimbingMode ClimbingMode)
 {
 	AClimbingCharacter* ClimbingChar = Cast<AClimbingCharacter>(PawnOwner);
@@ -531,7 +648,7 @@ bool UClimbingPawnMovementComponent::CanSetClimbMode(EClimbingMode ClimbingMode)
 	{
 		if (BlockClimb) return false;
 		FVector Start = PawnOwner->GetActorLocation() + FVector(0, 0, 97) + PawnOwner->GetActorForwardVector() * 60;
-		FVector End = Start - FVector(0, 0, 97);
+		FVector End = PawnOwner->GetActorLocation() + FVector(0, 0, ClimbSnatchHeight) + PawnOwner->GetActorForwardVector() * 60;
 
 		if (IsFalling() && Lib::TraceLine(GetWorld(), PawnOwner, Start, End))
 		{
@@ -539,6 +656,8 @@ bool UClimbingPawnMovementComponent::CanSetClimbMode(EClimbingMode ClimbingMode)
 		}
 		break;
 	}
+
+	
 
 	case EClimbingMode::CLIMB_UnderWallJump:
 	{
@@ -559,15 +678,22 @@ bool UClimbingPawnMovementComponent::CanSetClimbMode(EClimbingMode ClimbingMode)
 	}
 	case EClimbingMode::CLIMB_JumpOverBarier:
 	{
-		//Bottom Ray
-		FVector BottomStart = PawnOwner->GetActorLocation();
-		FVector BottomEnd = BottomStart + PawnOwner->GetActorForwardVector() * 300;
-		//Top Ray
-		FVector TopStart = BottomStart + FVector(0, 0, 90);
-		FVector TopEnd = TopStart + PawnOwner->GetActorForwardVector() * 300;
+		FVector Start = PawnOwner->GetActorLocation() + PawnOwner->GetActorForwardVector() * 60 + FVector(0, 0, JumpOverBarierDeltaJumpHeght);
+		FVector End = PawnOwner->GetActorLocation() + PawnOwner->GetActorForwardVector() * 60 + FVector(0, 0, -90);
 
-		if (Lib::TraceLine(GetWorld(), PawnOwner, BottomStart, BottomEnd) &&
-			!Lib::TraceLine(GetWorld(), PawnOwner, TopStart, TopEnd))
+		if (Lib::TraceLine(GetWorld(), PawnOwner, Start, End) && !BlockJumpOverBarier)
+		{
+			return true;
+		}
+		break;
+	}
+
+	case EClimbingMode::CLIMB_LiftOnWall:
+	{
+		FVector Start = PawnOwner->GetActorLocation() + PawnOwner->GetActorForwardVector() * 60 + FVector(0, 0, 100);
+		FVector End = PawnOwner->GetActorLocation() + PawnOwner->GetActorForwardVector() * 60 + FVector(0, 0, -120);
+
+		if (Lib::TraceLine(GetWorld(), PawnOwner, Start, End))
 		{
 			return true;
 		}
@@ -589,11 +715,11 @@ bool UClimbingPawnMovementComponent::CanSetClimbMode(EClimbingMode ClimbingMode)
 
 		if (Lib::TraceLine(GetWorld(), PawnOwner, LeftBackStart, LeftBackEnd, LeftBackHit) &&
 			Lib::TraceLine(GetWorld(), PawnOwner, LeftForwardStart, LeftForwardEnd) &&
-			PawnOwner->InputComponent->GetAxisValue(TEXT("MoveForward")) > 0 &&
-			Lib::VectorXYAngle(PawnOwner->GetActorForwardVector(), LeftBackHit.Normal) > WallRunLimitAngle + 90)
+			PawnOwner->InputComponent->GetAxisValue(TEXT("MoveForward")) > 0)
 		{
 			return true;
 		}
+
 		break;
 	}
 	case EClimbingMode::CLIMB_RightWallRun:
@@ -610,11 +736,11 @@ bool UClimbingPawnMovementComponent::CanSetClimbMode(EClimbingMode ClimbingMode)
 
 		if (Lib::TraceLine(GetWorld(), PawnOwner, RightBackStart, RightBackEnd, RightBackHit) &&
 			Lib::TraceLine(GetWorld(), PawnOwner, RightForwardStart, RightForwardEnd) &&
-			PawnOwner->InputComponent->GetAxisValue(TEXT("MoveForward")) > 0 &&
-			Lib::VectorXYAngle(PawnOwner->GetActorForwardVector(), RightBackHit.Normal) > WallRunLimitAngle + 90)
+			PawnOwner->InputComponent->GetAxisValue(TEXT("MoveForward")) > 0 )
 		{
 			return true;
 		}
+		
 		break;
 	}
 	case EClimbingMode::CLIMB_Slide:
@@ -676,6 +802,38 @@ bool UClimbingPawnMovementComponent::CanSetClimbMode(EClimbingMode ClimbingMode)
 		
 		break;
 	}
+
+	case EClimbingMode::CLIMB_RoundingTheCorner:
+	{
+
+		FHitResult TopHitResult;
+		FVector TopStart = PawnOwner->GetActorLocation() + FVector(0, 0, 97) + PawnOwner->GetActorForwardVector() * 60;
+		FVector TopEnd = TopStart - FVector(0, 0, 200);
+
+		if (!Lib::TraceLine(GetWorld(), PawnOwner, TopStart, TopEnd, TopHitResult)) return false;
+
+		FVector UnderRayStart = PawnOwner->GetActorLocation() + PawnOwner->GetActorRightVector() * 50 + PawnOwner->GetActorForwardVector() * 100;
+		UnderRayStart.Z = TopHitResult.ImpactPoint.Z - 10;
+		FVector UnderRayEnd = UnderRayStart - PawnOwner->GetActorRightVector() * 100;
+
+		FVector OverRayStart = PawnOwner->GetActorLocation() + PawnOwner->GetActorRightVector() * 50 + PawnOwner->GetActorForwardVector() * 100;
+		OverRayStart.Z = TopHitResult.ImpactPoint.Z + 10;
+		FVector OverRayEnd = OverRayStart - PawnOwner->GetActorRightVector() * 100;
+
+		if (PawnOwner->InputComponent->GetAxisValue(TEXT("MoveRight")) > 0 && Lib::TraceLine(GetWorld(), PawnOwner, UnderRayStart, UnderRayEnd) &&
+			!Lib::TraceLine(GetWorld(), PawnOwner, OverRayStart, OverRayEnd))
+		{
+			return true;
+		}
+		else if (PawnOwner->InputComponent->GetAxisValue(TEXT("MoveRight")) < 0 && Lib::TraceLine(GetWorld(), PawnOwner, UnderRayEnd, UnderRayStart)
+			&& !Lib::TraceLine(GetWorld(), PawnOwner, OverRayEnd, OverRayStart))
+		{
+			return true;
+		}
+
+		break;
+	}
+
 	}
 
 	return false;
@@ -707,54 +865,57 @@ bool UClimbingPawnMovementComponent::CheckDeltaVectorInCurrentState(const FVecto
 	{
 	case EClimbingMode::CLIMB_Climb:
 	{
-		int DeltaReyHeight = -5;
-		//Top Ray
-		FVector Start = PawnOwner->GetActorLocation() + InputDeltaVector + FVector(0, 0, 97) + PawnOwner->GetActorForwardVector() * 60;
-		FVector End = Start - FVector(0, 0, 97);
+		
+		//Top Ray Var
+		FVector Start;
+		FVector End;
 		FHitResult HitDataTop;
-		FHitResult HitDataMiddel;
-		if (!Lib::TraceLine(GetWorld(), PawnOwner, Start, End, HitDataTop)) return false;
-		for (int i = 4; i >= 0; i--)
+		
+		if (PawnOwner->InputComponent->GetAxisValue(TEXT("MoveRight")) < 0)
 		{
+			//Left Top Ray
+			Start = PawnOwner->GetActorLocation() + InputDeltaVector + FVector(0, 0, 110) + PawnOwner->GetActorForwardVector() * 60 - PawnOwner->GetActorRightVector() * 40;
+			End = Start - FVector(0, 0, 97);
+			HitDataTop;
+			if (!Lib::TraceLine(GetWorld(), PawnOwner, Start, End, HitDataTop)) return false;
 
-			Start = FVector((GetActorLocation() + InputDeltaVector).X, (GetActorLocation() + InputDeltaVector).Y, HitDataTop.Location.Z - (10 * pow(2, i)));
-			End = Start + PawnOwner->GetActorForwardVector() * 60;
-
-			if (Lib::TraceLine(GetWorld(), PawnOwner, Start, End, HitDataMiddel))
-			{
-				DeltaReyHeight = i;
-				break;
-			}
-		}
-
-		if (DeltaReyHeight == -5) return false;
-
-		//Left Ray
-		Start = FVector((GetActorLocation() + InputDeltaVector).X, (GetActorLocation() + InputDeltaVector).Y, HitDataTop.Location.Z - (10 * pow(2, DeltaReyHeight))) - PawnOwner->GetActorRightVector() * 40;
-		End = Start + PawnOwner->GetActorForwardVector() * 70;
-		FHitResult HitDataLeft;
-		//UE_LOG(ClimbingSystem, Warning, TEXT("1"));
-		if (!Lib::TraceLine(GetWorld(), PawnOwner, Start, End, HitDataLeft)) return false;
-
-		//Right Ray
-		Start = FVector((GetActorLocation() + InputDeltaVector).X, (GetActorLocation() + InputDeltaVector).Y, HitDataTop.Location.Z - (10 * pow(2, DeltaReyHeight))) + PawnOwner->GetActorRightVector() * 40;
-		End = Start + PawnOwner->GetActorForwardVector() * 70;
-		FHitResult HitDataRight;
-		if (!Lib::TraceLine(GetWorld(), PawnOwner, Start, End, HitDataRight)) return false;
-
-		FVector CharLoc = HitDataMiddel.Location;
-		CharLoc.Z = HitDataTop.Location.Z + ClimbDeltaZ;
-		float CharYaw;
-		if (HitDataLeft.Normal.Rotation().Yaw < 0 && HitDataRight.Normal.Rotation().Yaw > 0)
-		{
-			CharYaw = HitDataMiddel.Normal.Rotation().Yaw;
+			//Left Ray
+			Start = FVector((GetActorLocation() + InputDeltaVector).X, (GetActorLocation() + InputDeltaVector).Y, HitDataTop.Location.Z - 10) - PawnOwner->GetActorRightVector() * 40;
+			End = Start + PawnOwner->GetActorForwardVector() * 70;
+			if (!Lib::TraceLine(GetWorld(), PawnOwner, Start, End)) return false;
+			//UE_LOG(ClimbingSystem, Warning, TEXT("1"));
+			
 		}
 		else
 		{
-			CharYaw = HitDataMiddel.Normal.Rotation().Yaw + 180;
+			//Right Top Ray
+			Start = PawnOwner->GetActorLocation() + InputDeltaVector + FVector(0, 0, 110) + PawnOwner->GetActorForwardVector() * 60 + PawnOwner->GetActorRightVector() * 40;
+			End = Start - FVector(0, 0, 97);
+			HitDataTop;
+			if (!Lib::TraceLine(GetWorld(), PawnOwner, Start, End, HitDataTop)) return false;
+
+			//Right Ray
+			Start = FVector((GetActorLocation() + InputDeltaVector).X, (GetActorLocation() + InputDeltaVector).Y, HitDataTop.Location.Z - 10) + PawnOwner->GetActorRightVector() * 40;
+			End = Start + PawnOwner->GetActorForwardVector() * 70;
+			if (!Lib::TraceLine(GetWorld(), PawnOwner, Start, End)) return false;
 		}
 
-		CheckRotation.Yaw = CharYaw;
+		//Middle Top Ray
+		Start = PawnOwner->GetActorLocation() + InputDeltaVector + FVector(0, 0, 110) + PawnOwner->GetActorForwardVector() * 60;
+		End = Start - FVector(0, 0, 97);
+		HitDataTop;
+		if (!Lib::TraceLine(GetWorld(), PawnOwner, Start, End, HitDataTop)) return false;
+
+		//Middel Ray
+		FHitResult HitDataMiddel;
+		Start = FVector((GetActorLocation() + InputDeltaVector).X, (GetActorLocation() + InputDeltaVector).Y, HitDataTop.Location.Z - 10);
+		End = Start + PawnOwner->GetActorForwardVector() * 60;
+		if (!Lib::TraceLine(GetWorld(), PawnOwner, Start, End, HitDataMiddel)) return false;
+
+		FVector CharLoc = HitDataMiddel.Location;
+		CharLoc.Z = HitDataTop.Location.Z + ClimbDeltaZ;
+	
+		CheckRotation.Yaw = GetYawCharacterFromWall(HitDataMiddel);
 		CheckDeltaVector = CharLoc - GetActorLocation();
 		return true;
 	}
@@ -862,15 +1023,42 @@ bool UClimbingPawnMovementComponent::CheckDeltaVectorInCurrentState(const FVecto
 
 	case EClimbingMode::CLIMB_JumpOverBarier:
 	{
-		FVector Start = GetActorLocation();
-		FVector End = Start - FVector(0, 0, 100);
-		if (Lib::TraceLine(GetWorld(), PawnOwner, Start, End))
+		CheckRotation = PawnOwner->GetActorRotation();
+
+		FHitResult HitResultForward;
+		FVector Start = PawnOwner->GetActorLocation() + PawnOwner->GetActorForwardVector() * 60 + FVector(0, 0, JumpOverBarierDeltaJumpHeght);
+		FVector End = PawnOwner->GetActorLocation() + PawnOwner->GetActorForwardVector() * 60 + FVector(0, 0, -120);
+		Lib::TraceLine(GetWorld(), PawnOwner, Start, End, HitResultForward);
+
+		
+		if (PawnOwner->GetActorLocation().Z - HitResultForward.ImpactPoint.Z < 100)
 		{
-			return false;
+			CheckDeltaVector = FVector(0, 0, InputDeltaVector.Z);
+			return true;
+		}
+		
+		return false;
+	}
+
+	case EClimbingMode::CLIMB_LiftOnWall:
+	{
+		CheckRotation = PawnOwner->GetActorRotation();
+
+		FHitResult HitResultForward;
+		FVector Start = PawnOwner->GetActorLocation() + PawnOwner->GetActorForwardVector() * 60 +FVector(0, 0, 100);
+		FVector End = PawnOwner->GetActorLocation() + PawnOwner->GetActorForwardVector() * 60 + FVector(0, 0, -120);
+		Lib::TraceLine(GetWorld(), PawnOwner, Start, End, HitResultForward);
+
+
+		if (PawnOwner->GetActorLocation().Z - HitResultForward.ImpactPoint.Z < 100)
+		{
+			CheckDeltaVector = FVector(0, 0, InputDeltaVector.Z);
+			return true;
 		}
 
-		return true;
+		return false;
 	}
+
 	case EClimbingMode::CLIMB_ZipLine:
 	{
 		if (ClimbingChar->ZipLine->EndBox->IsOverlappingActor(ClimbingChar))
@@ -903,6 +1091,118 @@ bool UClimbingPawnMovementComponent::CheckDeltaVectorInCurrentState(const FVecto
 			return false;
 		}
 	}
+
+	case EClimbingMode::CLIMB_RoundingTheCorner:
+	{
+		FVector Start;
+		FVector End;
+		
+		if (RoundingTheCornerData.State == ERoundingTheCornerState::FistMove)
+		{
+			CheckRotation = PawnOwner->GetActorRotation();
+			if (RoundingTheCornerData.MovementDirection)
+			{
+				Start = PawnOwner->GetActorLocation() + FVector(0, 0, RoundingTheCornerData.TraceLineZ) - PawnOwner->GetActorRightVector() * 40;
+				End = Start + PawnOwner->GetActorForwardVector() * 60;
+
+				if (Lib::TraceLine(GetWorld(), PawnOwner, Start, End))
+				{
+					CheckDeltaVector = PawnOwner->GetActorRightVector() * InputDeltaVector.X;
+
+					return true;
+				}
+				else
+				{
+					RoundingTheCornerData.State = ERoundingTheCornerState::Rotate;
+					return true;
+				}
+			}
+			else
+			{
+				Start = PawnOwner->GetActorLocation() + FVector(0, 0, RoundingTheCornerData.TraceLineZ) + PawnOwner->GetActorRightVector() * 40;
+				End = Start + PawnOwner->GetActorForwardVector() * 60;
+
+				if (Lib::TraceLine(GetWorld(), PawnOwner, Start, End))
+				{
+					CheckDeltaVector = PawnOwner->GetActorRightVector() * (- InputDeltaVector.X);
+
+					return true;
+				}
+				else
+				{
+					RoundingTheCornerData.State = ERoundingTheCornerState::Rotate;
+					return true;
+				}
+			}
+		}
+		else if (RoundingTheCornerData.State == ERoundingTheCornerState::Rotate)
+		{
+			RoundingTheCornerData.RotateAngle = RoundingTheCornerData.RotateAngle + InputDeltaVector.Y;
+			if (RoundingTheCornerData.MovementDirection)
+			{
+				if (RoundingTheCornerData.RotateAngle > 90)
+				{
+					CheckRotation.Yaw = PawnOwner->GetActorRotation().Yaw - InputDeltaVector.Y - (RoundingTheCornerData.RotateAngle - 90);
+					RoundingTheCornerData.State = ERoundingTheCornerState::SecondMove;
+				}
+				else
+				{
+					CheckRotation.Yaw = PawnOwner->GetActorRotation().Yaw - InputDeltaVector.Y;
+				}
+			}
+			else
+			{
+				if (RoundingTheCornerData.RotateAngle > 90)
+				{
+					CheckRotation.Yaw = PawnOwner->GetActorRotation().Yaw + InputDeltaVector.Y - (RoundingTheCornerData.RotateAngle - 90);
+					RoundingTheCornerData.State = ERoundingTheCornerState::SecondMove;
+				}
+				else
+				{
+					CheckRotation.Yaw = PawnOwner->GetActorRotation().Yaw + InputDeltaVector.Y;
+				}
+				
+			}
+			return true;
+		}
+		else if (RoundingTheCornerData.State == ERoundingTheCornerState::SecondMove)
+		{
+			CheckRotation = PawnOwner->GetActorRotation();
+			if (RoundingTheCornerData.MovementDirection)
+			{
+				Start = PawnOwner->GetActorLocation() + FVector(0, 0, RoundingTheCornerData.TraceLineZ) - PawnOwner->GetActorRightVector() * 45;
+				End = Start + PawnOwner->GetActorForwardVector() * 60;
+
+				if (!Lib::TraceLine(GetWorld(), PawnOwner, Start, End))
+				{
+					CheckDeltaVector = PawnOwner->GetActorRightVector() * InputDeltaVector.X;
+
+					return true;
+				}
+				else
+				{
+					return false;
+				}
+			}
+			else
+			{
+				Start = PawnOwner->GetActorLocation() + FVector(0, 0, RoundingTheCornerData.TraceLineZ) + PawnOwner->GetActorRightVector() * 45;
+				End = Start + PawnOwner->GetActorForwardVector() * 60;
+
+				if (!Lib::TraceLine(GetWorld(), PawnOwner, Start, End))
+				{
+					CheckDeltaVector = PawnOwner->GetActorRightVector() * (-InputDeltaVector.X);
+
+					return true;
+				}
+				else
+				{
+					return false;
+				}
+			}
+		}
+	}
+
 	}
 	return false;
 }
@@ -926,14 +1226,6 @@ bool UClimbingPawnMovementComponent::DoJump(bool bReplayingMoves)
 				{
 					Velocity = FVector(0, 0, UnderWallJumpZVelocyty);
 					SetMovementMode(MOVE_Falling);
-				}
-				else if (CanSetClimbMode(EClimbingMode::CLIMB_JumpOverBarier))
-				{
-					SetClimbMode(EClimbingMode::CLIMB_JumpOverBarier);
-					PawnOwner->SetActorLocation(PawnOwner->GetActorLocation() + FVector(0, 0, 120));
-					Velocity += PawnOwner->GetActorForwardVector() * 250;
-					SetMovementMode(MOVE_Falling);
-
 				}
 				else if (CanSetClimbMode(EClimbingMode::CLIMB_LeftWallRun))
 				{
@@ -971,8 +1263,10 @@ bool UClimbingPawnMovementComponent::DoJump(bool bReplayingMoves)
 		}
 		else
 		{
-			SetClimbMode(EClimbingMode::CLIMB_None);
-			Velocity = FVector(0, 0, 600);
+			if (CanSetClimbMode(EClimbingMode::CLIMB_LiftOnWall))
+			{
+				SetClimbMode(EClimbingMode::CLIMB_LiftOnWall);
+			}
 		}
 		break;
 	}
@@ -1064,3 +1358,8 @@ void UClimbingPawnMovementComponent::MoveTo(const FVector& Delta, const FRotator
 	}
 }
 
+float UClimbingPawnMovementComponent::GetYawCharacterFromWall(FHitResult HitResult)
+{
+	 
+	return HitResult.Normal.Rotation().Yaw + 180;
+}

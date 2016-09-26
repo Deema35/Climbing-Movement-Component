@@ -5,28 +5,28 @@
 		<DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugGame_Editor|Win32'">
-		<LocalDebuggerCommandArguments>"$(SolutionDir)$(ProjectName).uproject" -debug</LocalDebuggerCommandArguments>
+		<LocalDebuggerCommandArguments>"$(SolutionDir)$(ProjectName).uproject" -skipcompile -debug</LocalDebuggerCommandArguments>
 		<DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugGame_Game|x64'">
 		<DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugGame_Editor|x64'">
-		<LocalDebuggerCommandArguments>"$(SolutionDir)$(ProjectName).uproject" -debug</LocalDebuggerCommandArguments>
+		<LocalDebuggerCommandArguments>"$(SolutionDir)$(ProjectName).uproject" -skipcompile -debug</LocalDebuggerCommandArguments>
 		<DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Development_Game|Win32'">
 		<DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Development_Editor|Win32'">
-		<LocalDebuggerCommandArguments>"$(SolutionDir)$(ProjectName).uproject"</LocalDebuggerCommandArguments>
+		<LocalDebuggerCommandArguments>"$(SolutionDir)$(ProjectName).uproject" -skipcompile</LocalDebuggerCommandArguments>
 		<DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Development_Game|x64'">
 		<DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Development_Editor|x64'">
-		<LocalDebuggerCommandArguments>"$(SolutionDir)$(ProjectName).uproject"</LocalDebuggerCommandArguments>
+		<LocalDebuggerCommandArguments>"$(SolutionDir)$(ProjectName).uproject" -skipcompile</LocalDebuggerCommandArguments>
 		<DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Shipping_Game|Win32'">

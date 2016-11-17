@@ -79,7 +79,7 @@ float Lib::VectorXYAngle(FVector V1, FVector V2)
 	float V2Len = pow(pow(V2.X, 2) + pow(V2.Y, 2), 0.5);
 
 	float ScalarProduct = (V1.X * V2.X + V1.Y * V2.Y);
-	float CosVek = ScalarProduct / V1Len * V2Len;
+	float CosVek = ScalarProduct / (V1Len * V2Len);
 	float B = V1.X * V2.Y - V2.X * V1.Y;
 	float Sign = B > 0 ? 1 : -1;
 	return acos(CosVek)  * 180.0 / PI * Sign;

@@ -2,6 +2,5 @@
 
 #pragma once
 
-#include "Engine.h"
+#include "EngineMinimal.h"
 
-DECLARE_LOG_CATEGORY_EXTERN(ClimbingSystem, All, All)

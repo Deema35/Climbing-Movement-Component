@@ -1,0 +1,24 @@
+{
+	"FileVersion" : 3,
+	"FriendlyName" : "ClimbingMovementComponent",
+	"Version" : 48,
+	"VersionName" : "1.0",
+	"CreatedBy" : "Deema 35",
+	"CreatedByURL" : " ",
+	"EngineVersion" : "4.15.1",
+	"Description" : "Dialog System",
+	"Category" : "Gamplay",
+	"EnabledByDefault" : true,
+	"MarketplaceURL" : " ",
+	
+	"Modules" :
+	[
+		{
+			"Name" : "ClimbingPawnMovementComponentRuntime",
+			"Type" : "Runtime",
+			"LoadingPhase" : "PreDefault"
+		}
+	],
+
+	"CanContainContent" : false
+}

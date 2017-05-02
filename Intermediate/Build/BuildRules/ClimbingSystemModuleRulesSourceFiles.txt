@@ -1,3 +1,0 @@
-D:\Unreal Projects\ClimbingSystem\Source\ClimbingSystem\ClimbingSystem.Build.cs
-D:\Unreal Projects\ClimbingSystem\Source\ClimbingSystem.Target.cs
-D:\Unreal Projects\ClimbingSystem\Source\ClimbingSystemEditor.Target.cs

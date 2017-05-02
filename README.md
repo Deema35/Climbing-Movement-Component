@@ -13,7 +13,7 @@ It can:
 6. slide down the inclined surfaces
 7. Also, I am create an interactive object on which the rope can also be slide
 
-If you want add this plugin in you project copy folder StoryGraphPlugin from folder plugins in "your progect folder"\plugins.
+If you want add this plugin in you project copy folder ClimbingPawnMovementComponent from folder plugins in "your progect folder"\plugins.
 
 To create Visual Studio project file right click on UE project file and choose "Generate VS project file".
 
@@ -27,7 +27,7 @@ To create Visual Studio project file right click on UE project file and choose "
 6. Скатываться с наклонных поверхностей
 7. А также я создал интерактивный объект веревку по которой  можно скатится
 
-Чтобы использовать плагин скопируйте папку StoryGraphPlugin из папки plugins в папку "директоря вашего проекта"\plugins.
+Чтобы использовать плагин скопируйте папку ClimbingPawnMovementComponent из папки plugins в папку "директоря вашего проекта"\plugins.
 
 Чтобы создать файл проекта для Visual Studio, кликнете правой кнопкой мыши по файлу проекта UE и выберите "Generate VS project file".
 

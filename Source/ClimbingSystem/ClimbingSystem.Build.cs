@@ -4,8 +4,8 @@ using UnrealBuildTool;
 
 public class ClimbingSystem : ModuleRules
 {
-	public ClimbingSystem(TargetInfo Target)
-	{
+	public ClimbingSystem(ReadOnlyTargetRules ROTargetRules) : base(ROTargetRules)
+    {
         PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs; // Enabel IWYU
 
         PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore" });

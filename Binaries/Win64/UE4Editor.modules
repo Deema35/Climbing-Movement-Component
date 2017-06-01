@@ -1,7 +1,6 @@
 {
-	"Changelist" : 3348071,
-	"CompatibleChangelist" : 3299760,
-	"BuildId" : "061ee2a1-1708-49db-bd34-6faec8f81f95",
+	"Changelist" : 3452394,
+	"BuildId" : "3b4a7172-9407-4d67-93ef-2f9e6ae50c92",
 	"Modules" : 
 	{
 		"ClimbingSystem" : "UE4Editor-ClimbingSystem.dll"

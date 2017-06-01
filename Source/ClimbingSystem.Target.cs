@@ -5,21 +5,15 @@ using System.Collections.Generic;
 
 public class ClimbingSystemTarget : TargetRules
 {
-	public ClimbingSystemTarget(TargetInfo Target)
-	{
+	public ClimbingSystemTarget(TargetInfo Target) : base(Target)
+    {
 		Type = TargetType.Game;
-	}
+        ExtraModuleNames.AddRange(new string[] { "ClimbingSystem" });
+    }
 
 	//
 	// TargetRules interface.
 	//
 
-	public override void SetupBinaries(
-		TargetInfo Target,
-		ref List<UEBuildBinaryConfiguration> OutBuildBinaryConfigurations,
-		ref List<string> OutExtraModuleNames
-		)
-	{
-		OutExtraModuleNames.AddRange( new string[] { "ClimbingSystem" } );
-	}
+	
 }

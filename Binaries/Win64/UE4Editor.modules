@@ -1,8 +1,7 @@
 {
-	"Changelist" : 3452394,
-	"BuildId" : "3b4a7172-9407-4d67-93ef-2f9e6ae50c92",
-	"Modules" : 
+	"BuildId": "3709383",
+	"Modules": 
 	{
-		"ClimbingSystem" : "UE4Editor-ClimbingSystem.dll"
+		"ClimbingSystem": "UE4Editor-ClimbingSystem.dll"
 	}
 }

@@ -1,4 +1,4 @@
-// Copyright 2016 Dmitriy
+// Copyright 2016 - 2018 Dmitriy Pavlov
 
 using UnrealBuildTool;
 

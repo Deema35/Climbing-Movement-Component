@@ -13,10 +13,6 @@ It can:
 6. slide down the inclined surfaces
 7. Also, I am create an interactive object on which the rope can also be slide
 
-If you want add this plugin in you project copy folder ClimbingPawnMovementComponent from folder plugins in "your progect folder"\plugins.
-
-To create Visual Studio project file right click on UE project file and choose "Generate VS project file".
-
 Здесь находится компонент движения который позволит персонажу:
 
 1. Запрыгивать на стену.
@@ -26,10 +22,6 @@ To create Visual Studio project file right click on UE project file and choose "
 5. Делать подкат при нажатие Shift
 6. Скатываться с наклонных поверхностей
 7. А также я создал интерактивный объект веревку по которой  можно скатится
-
-Чтобы использовать плагин скопируйте папку ClimbingPawnMovementComponent из папки plugins в папку "директоря вашего проекта"\plugins.
-
-Чтобы создать файл проекта для Visual Studio, кликнете правой кнопкой мыши по файлу проекта UE и выберите "Generate VS project file".
 
 [Video](https://www.youtube.com/watch?v=dSjZBR9v4DA&feature=youtu.be)
 

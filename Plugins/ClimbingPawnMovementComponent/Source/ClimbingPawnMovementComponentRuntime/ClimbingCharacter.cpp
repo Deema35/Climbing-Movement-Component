@@ -1,6 +1,4 @@
-// Copyright 2016 Dmitriy
-
-
+// Copyright 2016 - 2018 Dmitriy Pavlov
 #include "ClimbingCharacter.h"
 #include "ClimbingPawnMovementComponent.h"
 #include "Runtime/Engine/Classes/Kismet/KismetMathLibrary.h"
@@ -9,7 +7,7 @@
 #include "Camera/CameraComponent.h"
 #include "Components/InputComponent.h"
 #include "Components/SkeletalMeshComponent.h"
-#include "Kismet/GameplayStatics.h"
+#include "ClimbingPawnMode.h"
  
 
 
@@ -48,12 +46,12 @@ AClimbingCharacter::AClimbingCharacter(const FObjectInitializer& ObjectInitializ
 
 void AClimbingCharacter::NotifyActorBeginOverlap(AActor* OtherActor)
 {
-	if (ClimbingMovement->GetClimbingMode() == EClimbingMode::CLIMB_None && Cast<AOverlapObject>(OtherActor))
+	if (ClimbingMovement->GetCurrentClimbingMode() == EClimbingPawnModeType::Run && Cast<AOverlapObject>(OtherActor))
 	{
 		
 		OverlopObject = Cast<AOverlapObject>(OtherActor);
 		
-		if (ClimbingMovement->CanSetClimbMode(OverlopObject->GetObjectType()))
+		if (ClimbingMovement->GetMode(OverlopObject->GetObjectType()).CanSetMode())
 		{
 			ClimbingMovement->SetClimbMode(OverlopObject->GetObjectType());
 		}
@@ -106,22 +104,20 @@ void AClimbingCharacter::MoveForward(float AxisValue)
 {
 	if (ClimbingMovement && (ClimbingMovement->UpdatedComponent == RootComponent))
 	{
-		switch (ClimbingMovement->GetClimbingMode())
+		switch (ClimbingMovement->GetCurrentClimbingMode())
 		{
-		
-		
-		case EClimbingMode::CLIMB_LeftWallRun:
-		case EClimbingMode::CLIMB_RightWallRun:
+		case EClimbingPawnModeType::LeftWallRun:
+		case EClimbingPawnModeType::RightWallRun:
 			ClimbingMovement->AddInputVector(GetActorForwardVector() * AxisValue);
 			break;
 
-		case EClimbingMode::CLIMB_Climb:
-		case EClimbingMode::CLIMB_InclinedSlide:
-		case EClimbingMode::CLIMB_Slide:
+		case EClimbingPawnModeType::Climb:
+		case EClimbingPawnModeType::InclinedSlide:
+		case EClimbingPawnModeType::Slide:
 			break;
 
 		default:
-			ClimbingMovement->AddInputVector(UKismetMathLibrary::GetForwardVector(FRotator(0, GetControlRotation().Yaw, 0)) * AxisValue);
+			ClimbingMovement->AddInputVector(FRotator(0, GetControlRotation().Yaw, 0).Vector() * AxisValue);
 			break;
 		}
 	}
@@ -132,22 +128,23 @@ void AClimbingCharacter::MoveRight(float AxisValue)
 	if (ClimbingMovement && (ClimbingMovement->UpdatedComponent == RootComponent))
 	{
 
-		switch (ClimbingMovement->GetClimbingMode())
+		switch (ClimbingMovement->GetCurrentClimbingMode())
 		{
 		
-		case EClimbingMode::CLIMB_Climb:
-		case EClimbingMode::CLIMB_InclinedSlide:
+		case EClimbingPawnModeType::Climb:
+		case EClimbingPawnModeType::InclinedSlide:
 						
 			ClimbingMovement->AddInputVector(GetActorRightVector() * AxisValue);
 			break;
 
-		case EClimbingMode::CLIMB_LeftWallRun:
-		case EClimbingMode::CLIMB_RightWallRun:
-		case EClimbingMode::CLIMB_Slide:
+		case EClimbingPawnModeType::LeftWallRun:
+		case EClimbingPawnModeType::RightWallRun:
+		case EClimbingPawnModeType::Slide:
 			break;
 
 		default:
-			ClimbingMovement->AddInputVector(UKismetMathLibrary::GetRightVector(FRotator(0, GetControlRotation().Yaw, 0)) * AxisValue);
+
+			ClimbingMovement->AddInputVector((FRotator(0, GetControlRotation().Yaw, 0) + FRotator(0,90,0)).Vector() * AxisValue);
 			break;
 
 		}
@@ -166,7 +163,7 @@ void AClimbingCharacter::CameraYaw(float AxisValue)
 
 void AClimbingCharacter::Jump()
 {
-	if (ClimbingMovement->GetClimbingMode() == EClimbingMode::CLIMB_None)
+	if (ClimbingMovement->GetCurrentClimbingMode() == EClimbingPawnModeType::Run)
 	{
 		Super::Jump();
 	}
@@ -179,13 +176,13 @@ void AClimbingCharacter::Jump()
 void AClimbingCharacter::CrouchFunk()
 {
 	
-	switch (ClimbingMovement->GetClimbingMode())
+	switch (ClimbingMovement->GetCurrentClimbingMode())
 	{
-	case EClimbingMode::CLIMB_None:
-		if (ClimbingMovement->CanSetClimbMode(EClimbingMode::CLIMB_Slide))
+	case EClimbingPawnModeType::Run:
+		if (ClimbingMovement->GetMode(EClimbingPawnModeType::Slide).CanSetMode())
 		{
 			//Crouch();
-			ClimbingMovement->SetClimbMode(EClimbingMode::CLIMB_Slide);
+			ClimbingMovement->SetClimbMode(EClimbingPawnModeType::Slide);
 		}
 		else
 		{
@@ -194,12 +191,12 @@ void AClimbingCharacter::CrouchFunk()
 
 		break;
 	
-	case EClimbingMode::CLIMB_Climb:
-	case EClimbingMode::CLIMB_LeftWallRun:
-	case EClimbingMode::CLIMB_RightWallRun:
-	case EClimbingMode::CLIMB_ZipLine:
+	case EClimbingPawnModeType::Climb:
+	case EClimbingPawnModeType::LeftWallRun:
+	case EClimbingPawnModeType::RightWallRun:
+	case EClimbingPawnModeType::ZipLine:
 		
-		ClimbingMovement->SetClimbMode(EClimbingMode::CLIMB_None);
+		ClimbingMovement->SetClimbMode(EClimbingPawnModeType::Run);
 
 		break;
 
@@ -209,14 +206,15 @@ void AClimbingCharacter::CrouchFunk()
 void AClimbingCharacter::UnCrouchFunk()
 {
 	
-	switch (ClimbingMovement->GetClimbingMode())
+	switch (ClimbingMovement->GetCurrentClimbingMode())
 	{
-	case EClimbingMode::CLIMB_None:
+	case EClimbingPawnModeType::Run:
 		UnCrouch();
 		break;
-	case EClimbingMode::CLIMB_Slide:
+
+	case EClimbingPawnModeType::Slide:
 		UnCrouch();
-		ClimbingMovement->SetClimbMode(EClimbingMode::CLIMB_None);
+		ClimbingMovement->SetClimbMode(EClimbingPawnModeType::Run);
 		break;
 		
 	}
@@ -236,11 +234,11 @@ void AClimbingCharacter::ChangeView(bool FistPirson)
 	{
 		Camera->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
 		Camera->AttachToComponent(ClimbMesh, FAttachmentTransformRules::KeepRelativeTransform, FName("head"));
-		UGameplayStatics::GetPlayerController(GetWorld(), 0)->SetControlRotation(GetActorRotation());
+		GetWorld()->GetFirstPlayerController()->SetControlRotation(GetActorRotation());
 		Camera->SetRelativeLocation(FVector(0, 10, 0));
 		bFistPirsonView = true;
 		
-		if (ClimbingMovement->GetClimbingMode() != EClimbingMode::CLIMB_Climb)
+		if (ClimbingMovement->GetCurrentClimbingMode() != EClimbingPawnModeType::Climb)
 		{
 			bUseControllerRotationYaw = true;
 			ClimbingMovement->bOrientRotationToMovement = false;
@@ -252,7 +250,7 @@ void AClimbingCharacter::ChangeView(bool FistPirson)
 		Camera->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
 		Camera->AttachToComponent(CameraSpringArm, FAttachmentTransformRules::SnapToTargetNotIncludingScale, FName("SpringEndpoint"));
 		bFistPirsonView = false;
-		if (ClimbingMovement->GetClimbingMode() != EClimbingMode::CLIMB_Climb)
+		if (ClimbingMovement->GetCurrentClimbingMode() != EClimbingPawnModeType::Climb)
 		{
 			bUseControllerRotationYaw = false;
 			ClimbingMovement->bOrientRotationToMovement = true;

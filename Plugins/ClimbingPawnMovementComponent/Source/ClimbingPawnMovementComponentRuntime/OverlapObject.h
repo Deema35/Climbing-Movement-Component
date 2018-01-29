@@ -1,4 +1,4 @@
-// Copyright 2016 Dmitriy
+// Copyright 2016 - 2018 Dmitriy Pavlov
 
 #pragma once
 
@@ -10,13 +10,13 @@ class CLIMBINGPAWNMOVEMENTCOMPONENTRUNTIME_API AOverlapObject : public AActor
 {
 	GENERATED_BODY()
 public:
-	enum class EClimbingMode GetObjectType() const;
+	enum class EClimbingPawnModeType GetObjectType() const;
 
 	
 
 protected:
 	UPROPERTY(Category = ObjectType, VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	EClimbingMode ObjectType;
+	EClimbingPawnModeType ObjectType;
 	
 };
 
@@ -29,9 +29,11 @@ public:
 	AZipLine();
 
 	virtual void OnConstruction(const FTransform& Transform) override;
-#if WITH_EDITORONLY_DATA
-	virtual void PostEditMove(bool bFinished) override;
-#endif //WITH_EDITORONLY_DATA
+
+
+//#if WITH_EDITORONLY_DATA
+//	virtual void PostEditMove(bool bFinished) override;
+//#endif //WITH_EDITORONLY_DATA
 	/** The main skeletal mesh associated with this Character (optional sub-object). */
 	UPROPERTY(Category = ZipLine, VisibleDefaultsOnly, BlueprintReadOnly)
 	class UStaticMeshComponent* StartBase;
@@ -54,14 +56,17 @@ public:
 	UPROPERTY(Category = ZipLine, EditAnywhere, BlueprintReadOnly)
 		float SplineHeight;
 
+	//UPROPERTY(Category = ZipLine, EditAnywhere, BlueprintReadOnly)
+		//TArray<class USplineMeshComponent*> AddedSplineMeshComponents;
 
-#if WITH_EDITORONLY_DATA
-	UPROPERTY()
-	class UArrowComponent* ArrowComponent;
-#endif
+
+//#if WITH_EDITORONLY_DATA
+//	UPROPERTY()
+//	class UArrowComponent* ArrowComponent;
+//#endif
 
 protected:
-	TArray<class USplineMeshComponent*> AddedSplineMeshComponents;
+	
 
 	void SetupSpline();
 

@@ -1,4 +1,4 @@
-// Copyright 2016 Dmitriy
+// Copyright 2016 - 2018 Dmitriy Pavlov
 
 #pragma once
 
@@ -33,8 +33,11 @@ public:
 	virtual void SetupPlayerInputComponent(class UInputComponent* _InputComponent) override;
 
 	void MoveForward(float AxisValue);
+
 	void MoveRight(float AxisValue);
+
 	void CameraPitch(float AxisValue);
+
 	void CameraYaw(float AxisValue);
 
 	UFUNCTION(BlueprintCallable, Category = "Pawn|Character")
@@ -47,20 +50,23 @@ public:
 	void SwitchView();
 
 	void CrouchFunk();
+
 	void UnCrouchFunk();
 	
 	virtual void NotifyActorBeginOverlap(AActor* OtherActor) override;
+
+public:
+
+	bool bFistPirsonView;
+
+	class AOverlapObject* OverlopObject;
+
+	class AZipLine* ZipLine;
 	
 private:
 	/** Pointer to climbing movement component*/
 	UPROPERTY(Category = Character, VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 		class  UClimbingPawnMovementComponent* ClimbingMovement;
-
-		class AOverlapObject* OverlopObject;
-
-		class AZipLine* ZipLine;
-		
-		bool bFistPirsonView;
 
 		USkeletalMeshComponent* ClimbMesh;
 

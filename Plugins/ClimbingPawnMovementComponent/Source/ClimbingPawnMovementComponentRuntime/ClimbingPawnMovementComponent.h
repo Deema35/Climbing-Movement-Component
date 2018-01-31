@@ -65,13 +65,17 @@ public:
 	UPROPERTY(Category = "ClimbingMovement|WallRun", EditAnywhere, BlueprintReadWrite)
 		int32 WallRunInputVelocyty = 3;
 
-	/*Velocyty of jump near wall*/
+	/*Velocyty of jump on wall*/
 	UPROPERTY(Category = "ClimbingMovement|WallRun", EditAnywhere, BlueprintReadWrite)
-		float WallRunJumpZVelocyty = 600;
+		float WallRunJumpOnWallZVelocyty = 600;
 
-	/*Velocyty of jump from wall run state*/
+	/*Velocyty of jump from wall forward*/
 	UPROPERTY(Category = "ClimbingMovement|WallRun", EditAnywhere, BlueprintReadWrite)
-		float WallRunJumpVelocyty = 600;
+		float WallRunJumpForwardVelocyty = 600;
+
+	/*Velocyty of jump from wall up*/
+	UPROPERTY(Category = "ClimbingMovement|WallRun", EditAnywhere, BlueprintReadWrite)
+		float WallRunJumpUpVelocyty = 300;
 
 	/*Offset from rope of zip line*/
 	UPROPERTY(Category = "ClimbingMovement|ZipLine", EditAnywhere, BlueprintReadWrite)
@@ -130,7 +134,9 @@ public:
 
 	virtual void TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction *ThisTickFunction) override;
 
-	inline void MoveTo(const FVector& Delta, const FRotator& NewRotation);
+	inline void MoveTo(const FVector Delta, const FRotator NewRotation);
+
+	inline void CameraRotate(const FRotator NewRotation) { GetWorld()->GetFirstPlayerController()->SetControlRotation(NewRotation); }
 	
 	FClimbingPawnModeBase& GetMode(EClimbingPawnModeType ModeType) { return ModeStorage.Get(ModeType); }
 
@@ -141,8 +147,6 @@ public:
 
 private:
 	EClimbingPawnModeType CurrentClimbingMode;
-
-	EClimbingPawnModeType LastClimbingMode;
 	
 	float MinRunTime;
 	float MaxRunTime;

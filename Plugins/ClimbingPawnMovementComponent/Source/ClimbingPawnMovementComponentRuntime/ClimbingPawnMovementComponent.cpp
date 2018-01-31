@@ -107,22 +107,12 @@ void UClimbingPawnMovementComponent::DefineRunSpeed(float DeltaTime)
 
 void UClimbingPawnMovementComponent::SetClimbMode(EClimbingPawnModeType ClimbingMode)
 {
-	
 	if (CurrentClimbingMode == ClimbingMode) return;
-	
+	ModeStorage.Get(CurrentClimbingMode).UnSetMode();
 
-	LastClimbingMode = CurrentClimbingMode;
 	CurrentClimbingMode = ClimbingMode;
-
-	ModeStorage.Get(LastClimbingMode).UnSetMode();
-
-	if (!ModeStorage.Get(ClimbingMode).SetMode())
-	{
-		ModeStorage.Get(LastClimbingMode).SetMode();
-		ClimbingMode = LastClimbingMode;
-		UE_LOG(ClimbingPawnMovementComponentRuntime, Warning, TEXT("Cannot change mode"));
-		return;
-	}
+	
+	ModeStorage.Get(ClimbingMode).SetMode();
 	
 }
 
@@ -156,11 +146,10 @@ float UClimbingPawnMovementComponent::GetMaxSpeed() const
 		MaxSpeed = Super::GetMaxSpeed();
 	}
 
-	
 	return MaxSpeed;
 }
 
-void UClimbingPawnMovementComponent::MoveTo(const FVector& Delta, const FRotator& NewRotation)
+void UClimbingPawnMovementComponent::MoveTo(const FVector Delta, const FRotator NewRotation)
 {
 	FHitResult Hit;
 	SafeMoveUpdatedComponent(Delta, NewRotation, true, Hit);

@@ -31,9 +31,7 @@ public:
 	virtual void OnConstruction(const FTransform& Transform) override;
 
 
-//#if WITH_EDITORONLY_DATA
-//	virtual void PostEditMove(bool bFinished) override;
-//#endif //WITH_EDITORONLY_DATA
+
 	/** The main skeletal mesh associated with this Character (optional sub-object). */
 	UPROPERTY(Category = ZipLine, VisibleDefaultsOnly, BlueprintReadOnly)
 	class UStaticMeshComponent* StartBase;

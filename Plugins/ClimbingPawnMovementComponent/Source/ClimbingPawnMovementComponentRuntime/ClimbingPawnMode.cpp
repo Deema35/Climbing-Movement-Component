@@ -124,15 +124,16 @@ bool FClimbingPawnModeRun::DoJump(bool bReplayingMoves, bool& ReturnValue)
 	else if (MovementComponent.GetMode(EClimbingPawnModeType::LeftWallRun).CanSetMode())
 	{
 		MovementComponent.SetClimbMode(EClimbingPawnModeType::LeftWallRun);
-		
-		MovementComponent.Velocity.Z = MovementComponent.WallRunJumpZVelocyty;
+
+		MovementComponent.Velocity.Z = MovementComponent.WallRunJumpOnWallZVelocyty;
 		MovementComponent.SetMovementMode(MOVE_Falling);
 
 	}
 	else if (MovementComponent.GetMode(EClimbingPawnModeType::RightWallRun).CanSetMode())
 	{
+
 		MovementComponent.SetClimbMode(EClimbingPawnModeType::RightWallRun);
-		MovementComponent.Velocity.Z = MovementComponent.WallRunJumpZVelocyty;
+		MovementComponent.Velocity.Z = MovementComponent.WallRunJumpOnWallZVelocyty;
 		MovementComponent.SetMovementMode(MOVE_Falling);
 
 	}
@@ -175,19 +176,21 @@ bool FClimbingPawnModeClimb::Tick(float DeltaTime)
 	return false;
 }
 
-bool FClimbingPawnModeClimb::SetMode()
+void FClimbingPawnModeClimb::SetMode()
 {
 	FVector StartPosition;
 	FRotator StartRotation;
 
-	if (!CheckDeltaVectorInCurrentStateSimple(StartPosition, StartRotation)) return false;
-	MovementComponent.MoveTo(StartPosition, StartRotation);
+	
 
 	MovementComponent.GetPawnOwner()->bUseControllerRotationYaw = false;
 	MovementComponent.bOrientRotationToMovement = false;
 	MovementComponent.Velocity = FVector(0, 0, 0);
 
-	return true;
+	CheckDeltaVectorInCurrentStateSimple(StartPosition, StartRotation);
+
+	MovementComponent.MoveTo(StartPosition, StartRotation);
+
 }
 
 void FClimbingPawnModeClimb::UnSetMode()
@@ -207,11 +210,15 @@ bool FClimbingPawnModeClimb::CanSetMode()
 
 	AClimbingCharacter* ClimbingChar = Cast<AClimbingCharacter>(MovementComponent.GetPawnOwner());
 
+	
+
 	FVector Start = ClimbingChar->GetActorLocation() + FVector(0, 0, 97) + ClimbingChar->GetActorForwardVector() * 60;
 	FVector End = ClimbingChar->GetActorLocation() + FVector(0, 0, MovementComponent.ClimbSnatchHeight) + ClimbingChar->GetActorForwardVector() * 60;
 
 	if (MovementComponent.IsFalling() && TraceLine(MovementComponent.GetWorld(), ClimbingChar, Start, End))
 	{
+		if (!CheckDeltaVectorInCurrentStateSimple()) return false;
+
 		return true;
 	}
 
@@ -315,8 +322,8 @@ bool FClimbingPawnModeClimb::DoJump(bool bReplayingMoves, bool& ReturnValue)
 
 bool FClimbingPawnModeLeftWallRun::Tick(float DeltaTime)
 {
-	FVector NewPosition;
-	FRotator NewRotation;
+	FVector NewPosition(0,0,0);
+	FRotator NewRotation(0,0,0);
 	FVector DesiredMovementThisFrame = MovementComponent.ConsumeInputVector().GetClampedToMaxSize(1.0f) * DeltaTime * MovementComponent.ClimbVelocyty;
 
 	FVector OldVelocity = MovementComponent.Velocity;
@@ -328,6 +335,8 @@ bool FClimbingPawnModeLeftWallRun::Tick(float DeltaTime)
 	
 	FVector Adjusted;
 
+	
+
 	if (MovementComponent.Velocity.Z > 0)
 	{
 		Adjusted = 0.5*(OldVelocity + MovementComponent.Velocity) * DeltaTime;
@@ -336,36 +345,36 @@ bool FClimbingPawnModeLeftWallRun::Tick(float DeltaTime)
 	{
 		Adjusted = 0.5*(OldVelocity + MovementComponent.Velocity) * DeltaTime + MovementComponent.WallRunInputVelocyty * DesiredMovementThisFrame;
 	}
-
+	
 	if (!CheckDeltaVectorInCurrentState(Adjusted, NewPosition, NewRotation))
 	{
 
 		MovementComponent.SetClimbMode(EClimbingPawnModeType::Run);
 		
 	}
-
-	MovementComponent.MoveTo(NewPosition, NewRotation);
+	else
+	{
+		MovementComponent.MoveTo(NewPosition, NewRotation);
+	}
+	
 
 	return false;
 }
 
-bool FClimbingPawnModeLeftWallRun::SetMode()
+void FClimbingPawnModeLeftWallRun::SetMode()
 {
 	AClimbingCharacter* ClimbingChar = Cast<AClimbingCharacter>(MovementComponent.GetPawnOwner());
-
+	
 	FVector StartPosition;
 	FRotator StartRotation;
 
-	if (!CheckDeltaVectorInCurrentStateSimple(StartPosition, StartRotation)) return false;
+	CheckDeltaVectorInCurrentStateSimple(StartPosition, StartRotation);
 
 	MovementComponent.MoveTo(StartPosition, StartRotation);
-
-	if (ClimbingChar->bFistPirsonView) MovementComponent.GetWorld()->GetFirstPlayerController()->SetControlRotation(ClimbingChar->GetActorRotation());
-
+		
 	ClimbingChar->bUseControllerRotationYaw = false;
 	MovementComponent.bOrientRotationToMovement = false;
 
-	return true;
 }
 
 void FClimbingPawnModeLeftWallRun::UnSetMode()
@@ -381,16 +390,17 @@ void FClimbingPawnModeLeftWallRun::UnSetMode()
 
 bool FClimbingPawnModeLeftWallRun::CanSetMode()
 {
+	if (IsStateBlock()) return false;
+
 	AClimbingCharacter* ClimbingChar = Cast<AClimbingCharacter>(MovementComponent.GetPawnOwner());
 
-	if (IsStateBlock()) return false;
 
 	//Left Back Ray
 	FVector LeftBackStart = ClimbingChar->GetActorLocation() + FVector(0, 0, 90);
-	FVector LeftBackEnd = LeftBackStart - ClimbingChar->GetActorRightVector() * 60;
+	FVector LeftBackEnd = LeftBackStart + ClimbingChar->GetActorRightVector() * 60 * GetRayEndSign();
 	//Left Forward Ray
 	FVector LeftForwardStart = ClimbingChar->GetActorLocation() + FVector(0, 0, 90) + ClimbingChar->GetActorForwardVector() * 30;
-	FVector LeftForwardEnd = LeftForwardStart - ClimbingChar->GetActorRightVector() * 60;
+	FVector LeftForwardEnd = LeftForwardStart + ClimbingChar->GetActorRightVector() * 60 * GetRayEndSign();
 
 
 	FHitResult LeftBackHit;
@@ -406,174 +416,75 @@ bool FClimbingPawnModeLeftWallRun::CanSetMode()
 
 bool FClimbingPawnModeLeftWallRun::CheckDeltaVectorInCurrentState(const FVector& InputDeltaVector, FVector& CheckDeltaVector, FRotator& CheckRotation)
 {
+	if (ChackNeedStop()) return false;
+	
 	AClimbingCharacter* ClimbingChar = Cast<AClimbingCharacter>(MovementComponent.GetPawnOwner());
-
+	
 	CheckDeltaVector = FVector(0, 0, 0);
 	CheckRotation = FRotator(0, 0, 0);
-
-	FVector Start = ClimbingChar->GetActorLocation();
-	FVector End = Start - FVector(0, 0, 100);
-
-	if (TraceLine(MovementComponent.GetWorld(), ClimbingChar, Start, End))
-	{
-		return false;
-	}
-
-	Start = ClimbingChar->GetActorLocation();
-	End = Start + ClimbingChar->GetActorForwardVector() * 50;
-
-	if (TraceLine(MovementComponent.GetWorld(), ClimbingChar, Start, End))
-	{
-		return false;
-	}
-
 	//Left Back Ray
 	FVector LeftBackStart = ClimbingChar->GetActorLocation() + InputDeltaVector;
-	FVector LeftBackEnd = LeftBackStart - ClimbingChar->GetActorRightVector() * 60;
+	FVector LeftBackEnd = LeftBackStart + ClimbingChar->GetActorRightVector() * 60 * GetRayEndSign();
 
 	//Left Forward Ray
 	FVector LeftForwardStart = ClimbingChar->GetActorLocation() + InputDeltaVector + ClimbingChar->GetActorForwardVector() * 30;
-	FVector LeftForwardEnd = LeftForwardStart - ClimbingChar->GetActorRightVector() * 60;
+	FVector LeftForwardEnd = LeftForwardStart + ClimbingChar->GetActorRightVector() * 60 * GetRayEndSign();
 
 	FHitResult LeftBackHit;
 	if (TraceLine(MovementComponent.GetWorld(), ClimbingChar, LeftBackStart, LeftBackEnd, LeftBackHit) &&
 		TraceLine(MovementComponent.GetWorld(), ClimbingChar, LeftForwardStart, LeftForwardEnd))
 	{
 		CheckDeltaVector = LeftBackHit.Location + LeftBackHit.Normal * MovementComponent.WallOffset - ClimbingChar->GetActorLocation();
-		CheckRotation.Yaw = LeftBackHit.Normal.Rotation().Yaw + 270;
+		CheckRotation.Yaw = LeftBackHit.Normal.Rotation().Yaw + GetCharRotation();
 		return true;
 	}
+	
 	else return false;
+	
 }
 
-bool FClimbingPawnModeLeftWallRun::DoJump(bool bReplayingMoves, bool& ReturnValue)
+bool FClimbingPawnModeLeftWallRun::ChackNeedStop()
 {
 	AClimbingCharacter* ClimbingChar = Cast<AClimbingCharacter>(MovementComponent.GetPawnOwner());
-
-	float Angle;
-	//Left Back Ray
-
-	FVector LeftBackStart = ClimbingChar->GetActorLocation();
-	FVector LeftBackEnd = LeftBackStart - ClimbingChar->GetActorRightVector() * 60;
-
-	FHitResult LeftBackHit;
-	if (TraceLine(MovementComponent.GetWorld(), ClimbingChar, LeftBackStart, LeftBackEnd, LeftBackHit))
-	{
-		Angle = VectorXYAngle(ClimbingChar->GetControlRotation().Vector(), LeftBackHit.Normal);
-
-		if (fabs(Angle) < 90)
-		{
-			MovementComponent.SetClimbMode(EClimbingPawnModeType::Run);
-			
-			MovementComponent.Velocity = ClimbingChar->GetControlRotation().Vector()  * MovementComponent.WallRunJumpVelocyty;
-
-			ReturnValue = true;
-			return false;
-		}
-	}
-
-	ReturnValue = false;
-	return false;
-}
-
-//***********************************************
-//FClimbingPawnModeRightWallRun
-//***********************************************
-
-bool FClimbingPawnModeRightWallRun::CanSetMode()
-{
-	AClimbingCharacter* ClimbingChar = Cast<AClimbingCharacter>(MovementComponent.GetPawnOwner());
-
-	if (IsStateBlock()) return false;
-
-	FVector RightBackStart = ClimbingChar->GetActorLocation() + FVector(0, 0, 90);
-	FVector RightBackEnd = RightBackStart + ClimbingChar->GetActorRightVector() * 60;
-	//Right Forward Ray
-	FVector RightForwardStart = ClimbingChar->GetActorLocation() + FVector(0, 0, 90) + ClimbingChar->GetActorForwardVector() * 30;
-	FVector RightForwardEnd = RightForwardStart + ClimbingChar->GetActorRightVector() * 60;
-
-	FHitResult RightBackHit;
-
-	if (TraceLine(MovementComponent.GetWorld(), ClimbingChar, RightBackStart, RightBackEnd, RightBackHit) &&
-		TraceLine(MovementComponent.GetWorld(), ClimbingChar, RightForwardStart, RightForwardEnd) &&
-		ClimbingChar->InputComponent->GetAxisValue(TEXT("MoveForward")) > 0)
-	{
-		return true;
-	}
-	else return false;
-}
-
-bool FClimbingPawnModeRightWallRun::CheckDeltaVectorInCurrentState(const FVector& InputDeltaVector, FVector& CheckDeltaVector, FRotator& CheckRotation)
-{
-	AClimbingCharacter* ClimbingChar = Cast<AClimbingCharacter>(MovementComponent.GetPawnOwner());
-
-	CheckDeltaVector = FVector(0, 0, 0);
-	CheckRotation = FRotator(0, 0, 0);
 
 	FVector Start = ClimbingChar->GetActorLocation();
 	FVector End = Start - FVector(0, 0, 100);
 
 	if (TraceLine(MovementComponent.GetWorld(), ClimbingChar, Start, End))
 	{
-		return false;
-	}
-	Start = ClimbingChar->GetActorLocation();
-	End = Start + ClimbingChar->GetActorForwardVector() * 50;
-	if (TraceLine(MovementComponent.GetWorld(), ClimbingChar, Start, End))
-	{
-		return false;
-	}
-
-	//Right Back Ray
-	FVector RightBackStart = ClimbingChar->GetActorLocation() + InputDeltaVector;
-	FVector RightBackEnd = RightBackStart + ClimbingChar->GetActorRightVector() * 60;
-
-	//Right Forward Ray
-	FVector RightForwardStart = ClimbingChar->GetActorLocation() + InputDeltaVector + ClimbingChar->GetActorForwardVector() * 30;
-	FVector RightForwardEnd = RightForwardStart + ClimbingChar->GetActorRightVector() * 60;
-
-	FHitResult RightBackHit;
-
-	if (TraceLine(MovementComponent.GetWorld(), ClimbingChar, RightBackStart, RightBackEnd, RightBackHit) &&
-		TraceLine(MovementComponent.GetWorld(), ClimbingChar, RightForwardStart, RightForwardEnd))
-	{
-		CheckDeltaVector = RightBackHit.Location + RightBackHit.Normal * MovementComponent.WallOffset - ClimbingChar->GetActorLocation();
-		CheckRotation.Yaw = RightBackHit.Normal.Rotation().Yaw + 90;
-
 		return true;
 	}
-	else return false;
+
+	Start = ClimbingChar->GetActorLocation();
+	End = Start + ClimbingChar->GetActorForwardVector() * 50;
+
+	if (TraceLine(MovementComponent.GetWorld(), ClimbingChar, Start, End))
+	{
+		return true;
+	}
+
+	return false;
 }
 
-bool FClimbingPawnModeRightWallRun::DoJump(bool bReplayingMoves, bool& ReturnValue)
+bool FClimbingPawnModeLeftWallRun::DoJump(bool bReplayingMoves, bool& ReturnValue)
 {
 	AClimbingCharacter* ClimbingChar = Cast<AClimbingCharacter>(MovementComponent.GetPawnOwner());
 
-	float Angle;
-	//Left Back Ray
 
-	FVector LeftBackStart = ClimbingChar->GetActorLocation();
-	FVector LeftBackEnd = LeftBackStart + ClimbingChar->GetActorRightVector() * 60;
+	MovementComponent.SetClimbMode(EClimbingPawnModeType::Run);
+			
+	MovementComponent.Velocity = ClimbingChar->GetControlRotation().Vector()  * MovementComponent.WallRunJumpForwardVelocyty + FVector(0,0,1) * MovementComponent.WallRunJumpUpVelocyty;
 
-	FHitResult LeftBackHit;
-	if (TraceLine(MovementComponent.GetWorld(), ClimbingChar, LeftBackStart, LeftBackEnd, LeftBackHit))
-	{
-		Angle = VectorXYAngle(ClimbingChar->GetControlRotation().Vector(), LeftBackHit.Normal);
-
-		if (fabs(Angle) < 90)
-		{
-			MovementComponent.SetClimbMode(EClimbingPawnModeType::Run);
-
-			MovementComponent.Velocity = ClimbingChar->GetControlRotation().Vector()  * MovementComponent.WallRunJumpVelocyty;
-
-			ReturnValue = true;
-			return false;
-		}
-	}
-
-	ReturnValue = false;
+	ReturnValue = true;
 	return false;
+	
 }
+
+//***********************************************
+//FClimbingPawnModeRightWallRun
+//***********************************************
+
+
 
 //***********************************************
 //FClimbingPawnModeSlide
@@ -581,22 +492,25 @@ bool FClimbingPawnModeRightWallRun::DoJump(bool bReplayingMoves, bool& ReturnVal
 
 bool FClimbingPawnModeSlide::Tick(float DeltaTime)
 {
-	if (!CheckDeltaVectorInCurrentStateSimple())
+	if (CheckDeltaVectorInCurrentStateSimple())
 	{
-		MovementComponent.SetClimbMode(EClimbingPawnModeType::Run);
+		MovementComponent.Velocity = MovementComponent.GetPawnOwner()->GetActorForwardVector() * MovementComponent.SlideVelocytyCurve.GetRichCurve()->Eval(MinSlideTime);
+
+		FVector Adjusted = MovementComponent.Velocity * DeltaTime;
+		MovementComponent.MoveTo(Adjusted, MovementComponent.GetPawnOwner()->GetActorRotation());
+		MinSlideTime += DeltaTime;
 		
 	}
-
-	MovementComponent.Velocity = MovementComponent.GetPawnOwner()->GetActorForwardVector() * MovementComponent.SlideVelocytyCurve.GetRichCurve()->Eval(MinSlideTime);
-
-	FVector Adjusted = MovementComponent.Velocity * DeltaTime;
-	MovementComponent.MoveTo(Adjusted, MovementComponent.GetPawnOwner()->GetActorRotation());
-	MinSlideTime += DeltaTime;
+	else
+	{
+		MovementComponent.SetClimbMode(EClimbingPawnModeType::Run);
+	}
+	
 
 	return true;
 }
 
-bool FClimbingPawnModeSlide::SetMode()
+void FClimbingPawnModeSlide::SetMode()
 {
 	AClimbingCharacter* ClimbingChar = Cast<AClimbingCharacter>(MovementComponent.GetPawnOwner());
 
@@ -605,7 +519,6 @@ bool FClimbingPawnModeSlide::SetMode()
 	MovementComponent.bOrientRotationToMovement = false;
 	ClimbingChar->Crouch();
 
-	return true;
 }
 
 void FClimbingPawnModeSlide::UnSetMode()
@@ -686,13 +599,17 @@ bool FClimbingPawnModeJumpOverBarier::Tick(float DeltaTime)
 		Adjusted.Z = MovementComponent.JumpOverBarierMinLiftVelocyty * DeltaTime;
 	}
 
-	if (!CheckDeltaVectorInCurrentState(Adjusted, NewAdjusted, NewRotation))
+	if (CheckDeltaVectorInCurrentState(Adjusted, NewAdjusted, NewRotation))
 	{
-		MovementComponent.SetClimbMode(EClimbingPawnModeType::Run);
+		MovementComponent.MoveTo(NewAdjusted, NewRotation);
+		
 		
 	}
-
-	MovementComponent.MoveTo(NewAdjusted, NewRotation);
+	else
+	{
+		MovementComponent.SetClimbMode(EClimbingPawnModeType::Run);
+	}
+	
 
 	return false;
 }
@@ -784,32 +701,35 @@ bool FClimbingPawnModeZipLine::Tick(float DeltaTime)
 	MovementComponent.Velocity = MovementComponent.GetPawnOwner()->GetActorForwardVector() * MovementComponent.ZipLineVelocyty;
 	FVector Adjusted = MovementComponent.Velocity * DeltaTime;
 
-	if (!CheckDeltaVectorInCurrentState(Adjusted, NewPosition, NewRotation))
+	if (CheckDeltaVectorInCurrentState(Adjusted, NewPosition, NewRotation))
 	{
-		MovementComponent.SetClimbMode(EClimbingPawnModeType::Run);
+		MovementComponent.MoveTo(NewPosition, NewRotation);
 		
 	}
-
-	MovementComponent.MoveTo(NewPosition, NewRotation);
+	else
+	{
+		MovementComponent.SetClimbMode(EClimbingPawnModeType::Run);
+	}
+	
 
 	return false;
 }
 
-bool FClimbingPawnModeZipLine::SetMode()
+void FClimbingPawnModeZipLine::SetMode()
 {
 	AClimbingCharacter* ClimbingChar = Cast<AClimbingCharacter>(MovementComponent.GetPawnOwner());
 	FVector StartPosition;
 	FRotator StartRotation;
 
-	if (!CheckDeltaVectorInCurrentStateSimple(StartPosition, StartRotation)) return false;
+	CheckDeltaVectorInCurrentStateSimple(StartPosition, StartRotation);
 
 	MovementComponent.MoveTo(StartPosition, StartRotation);
 
-	if (ClimbingChar->bFistPirsonView) MovementComponent.GetWorld()->GetFirstPlayerController()->SetControlRotation(ClimbingChar->GetActorRotation());
+	if (ClimbingChar->bFistPirsonView) MovementComponent.CameraRotate(ClimbingChar->GetActorRotation());
 	ClimbingChar->bUseControllerRotationYaw = false;
 	MovementComponent.bOrientRotationToMovement = false;
 
-	return true;
+
 
 }
 
@@ -883,32 +803,33 @@ bool FClimbingPawnModeInclinedSlide::Tick(float DeltaTime)
 
 	FVector Adjusted = MovementComponent.Velocity * DeltaTime + DesiredMovementThisFrame;
 
-	if (!CheckDeltaVectorInCurrentState(Adjusted, NewPosition, NewRotation))
+	if (CheckDeltaVectorInCurrentState(Adjusted, NewPosition, NewRotation))
+	{
+		MovementComponent.MoveTo(NewPosition, NewRotation);
+	}
+	else
 	{
 		MovementComponent.SetClimbMode(EClimbingPawnModeType::Run);
-		
 	}
-
-	MovementComponent.MoveTo(NewPosition, NewRotation);
+	
 
 	return false;
 }
 
-bool FClimbingPawnModeInclinedSlide::SetMode()
+void FClimbingPawnModeInclinedSlide::SetMode()
 {
 	AClimbingCharacter* ClimbingChar = Cast<AClimbingCharacter>(MovementComponent.GetPawnOwner());
 	FVector StartPosition;
 	FRotator StartRotation;
 
-	if (!CheckDeltaVectorInCurrentStateSimple(StartPosition, StartRotation)) return false;
+	CheckDeltaVectorInCurrentStateSimple(StartPosition, StartRotation);
 
 	MovementComponent.MoveTo(StartPosition, StartRotation);
 
-	if (ClimbingChar->bFistPirsonView) MovementComponent.GetWorld()->GetFirstPlayerController()->SetControlRotation(ClimbingChar->GetActorRotation());
+	if (ClimbingChar->bFistPirsonView) MovementComponent.CameraRotate(ClimbingChar->GetActorRotation());
 	ClimbingChar->bUseControllerRotationYaw = false;
 	MovementComponent.bOrientRotationToMovement = false;
 
-	return true;
 }
 
 void FClimbingPawnModeInclinedSlide::UnSetMode()
@@ -998,13 +919,16 @@ bool FClimbingPawnModeLiftOnWall::Tick(float DeltaTime)
 	Adjusted = MovementComponent.GetPawnOwner()->GetActorForwardVector() * MovementComponent.ClimbLiftVelocyty * DeltaTime;
 	Adjusted.Z = MovementComponent.ClimbLiftVelocyty * DeltaTime;
 
-	if (!CheckDeltaVectorInCurrentState(Adjusted, NewPosition, NewRotation))
+	if (CheckDeltaVectorInCurrentState(Adjusted, NewPosition, NewRotation))
+	{
+		MovementComponent.MoveTo(NewPosition, NewRotation);
+	}
+	else
 	{
 		MovementComponent.SetClimbMode(EClimbingPawnModeType::Run);
-		
 	}
-
-	MovementComponent.MoveTo(NewPosition, NewRotation);
+	
+	
 
 	return false;
 }
@@ -1071,17 +995,22 @@ bool FClimbingPawnModeRoundingTheCorner::Tick(float DeltaTime)
 	Adjusted.Y = MovementComponent.RoundingTheCornerRotationVelocyty * DeltaTime;
 	
 
-	if (!CheckDeltaVectorInCurrentState(Adjusted, NewPosition, NewRotation))
+	if (CheckDeltaVectorInCurrentState(Adjusted, NewPosition, NewRotation))
+	{
+		MovementComponent.MoveTo(NewPosition, NewRotation);
+	}
+	else
 	{
 		MovementComponent.SetClimbMode(EClimbingPawnModeType::Climb);
+		
 	}
-
-	MovementComponent.MoveTo(NewPosition, NewRotation);
+	
+	
 
 	return false;
 }
 
-bool FClimbingPawnModeRoundingTheCorner::SetMode()
+void FClimbingPawnModeRoundingTheCorner::SetMode()
 {
 	AClimbingCharacter* ClimbingChar = Cast<AClimbingCharacter>(MovementComponent.GetPawnOwner());
 
@@ -1106,7 +1035,6 @@ bool FClimbingPawnModeRoundingTheCorner::SetMode()
 	RoundingTheCornerData.TraceLineZ = TopHitResult.ImpactPoint.Z - 10 - ClimbingChar->GetActorLocation().Z;
 	RoundingTheCornerData.RotateAngle = 0;
 
-	return true;
 }
 
 void FClimbingPawnModeRoundingTheCorner::UnSetMode()

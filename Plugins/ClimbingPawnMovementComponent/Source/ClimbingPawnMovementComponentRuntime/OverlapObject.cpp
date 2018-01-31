@@ -47,7 +47,6 @@ void AZipLine::OnConstruction(const FTransform& Transform)
 {
 	FVector Loc;
 	FVector Tangent;
-	//UE_LOG(LogTemp, Log, TEXT("OnConstruction"));
 
 	if (!StartBase || !EndBase || !Spline || !EndBox) return;
 

@@ -39,7 +39,7 @@ public:
 
 	virtual bool Tick(float DeltaTime) { return true; }
 
-	virtual bool SetMode() { return true; }
+	virtual void SetMode() {}
 
 	virtual void UnSetMode() {};
 
@@ -98,7 +98,7 @@ public:
 
 	virtual bool Tick(float DeltaTime ) override;
 
-	virtual bool SetMode() override;
+	virtual void SetMode() override;
 
 	virtual void UnSetMode() override;
 
@@ -118,7 +118,7 @@ public:
 
 	virtual bool Tick(float DeltaTime ) override;
 
-	virtual bool SetMode() override;
+	virtual void SetMode() override;
 
 	virtual void UnSetMode() override;
 
@@ -127,6 +127,14 @@ public:
 	virtual bool CheckDeltaVectorInCurrentState(const FVector& InputDeltaVector, FVector& CheckDeltaVector, FRotator& CheckRotation) override;
 
 	virtual bool DoJump(bool bReplayingMoves, bool& ReturnValue) override;
+
+protected:
+
+	virtual int GetRayEndSign() const { return -1; }
+
+	virtual int GetCharRotation() const { return 270; }
+
+	bool ChackNeedStop();
 };
 
 class FClimbingPawnModeRightWallRun : public FClimbingPawnModeLeftWallRun
@@ -136,11 +144,11 @@ public:
 
 	virtual EClimbingPawnModeType GetType() const override { return EClimbingPawnModeType::RightWallRun; }
 
-	virtual bool CanSetMode() override;
+protected:
 
-	virtual bool CheckDeltaVectorInCurrentState(const FVector& InputDeltaVector, FVector& CheckDeltaVector, FRotator& CheckRotation) override;
+	virtual int GetRayEndSign() const override { return 1; }
 
-	virtual bool DoJump(bool bReplayingMoves, bool& ReturnValue) override;
+	virtual int GetCharRotation() const override { return 90; }
 
 };
 
@@ -153,7 +161,7 @@ public:
 
 	virtual bool Tick(float DeltaTime ) override;
 
-	virtual bool SetMode() override;
+	virtual void SetMode() override;
 
 	virtual void UnSetMode() override;
 
@@ -204,7 +212,7 @@ public:
 
 	virtual bool Tick(float DeltaTime ) override;
 
-	virtual bool SetMode() override;
+	virtual void SetMode() override;
 
 	virtual void UnSetMode() override;
 
@@ -224,7 +232,7 @@ public:
 
 	virtual bool Tick(float DeltaTime ) override;
 
-	virtual bool SetMode() override;
+	virtual void SetMode() override;
 
 	virtual void UnSetMode() override;
 
@@ -282,7 +290,7 @@ public:
 
 	virtual bool Tick(float DeltaTime ) override;
 
-	virtual bool SetMode() override;
+	virtual void SetMode() override;
 
 	virtual void UnSetMode() override;
 

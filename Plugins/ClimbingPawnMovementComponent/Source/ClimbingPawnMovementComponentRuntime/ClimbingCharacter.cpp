@@ -46,16 +46,13 @@ AClimbingCharacter::AClimbingCharacter(const FObjectInitializer& ObjectInitializ
 
 void AClimbingCharacter::NotifyActorBeginOverlap(AActor* OtherActor)
 {
-	if (ClimbingMovement->GetCurrentClimbingMode() == EClimbingPawnModeType::Run && Cast<AOverlapObject>(OtherActor))
+	OverlopObject = Cast<AOverlapObject>(OtherActor);
+	if (OverlopObject)
 	{
-		
-		OverlopObject = Cast<AOverlapObject>(OtherActor);
-		
 		if (ClimbingMovement->GetMode(OverlopObject->GetObjectType()).CanSetMode())
 		{
 			ClimbingMovement->SetClimbMode(OverlopObject->GetObjectType());
 		}
-		
 		
 	}
 	
@@ -87,6 +84,7 @@ void AClimbingCharacter::SetupPlayerInputComponent(class UInputComponent* _Input
 
 	_InputComponent->BindAction("Jump", IE_Pressed, this, &ACharacter::Jump);
 	_InputComponent->BindAction("Jump", IE_Released, this, &ACharacter::StopJumping);
+	_InputComponent->BindAction("QuickTurn", IE_Pressed, this, &AClimbingCharacter::QuickTurn);
 	_InputComponent->BindAction("Crouch", IE_Pressed, this, &AClimbingCharacter::CrouchFunk);
 	_InputComponent->BindAction("Crouch", IE_Released, this, &AClimbingCharacter::UnCrouchFunk);
 	_InputComponent->BindAction("SwitchView", IE_Pressed, this, &AClimbingCharacter::SwitchView);
@@ -94,6 +92,7 @@ void AClimbingCharacter::SetupPlayerInputComponent(class UInputComponent* _Input
 	_InputComponent->BindAxis("CameraYaw", this, &AClimbingCharacter::CameraYaw);
 	_InputComponent->BindAxis("MoveForward", this, &AClimbingCharacter::MoveForward);
 	_InputComponent->BindAxis("MoveRight", this, &AClimbingCharacter::MoveRight);
+	
 	
 }
 
@@ -158,7 +157,32 @@ void AClimbingCharacter::CameraPitch(float AxisValue)
 
 void AClimbingCharacter::CameraYaw(float AxisValue)
 {
+	
+
+	if (BlockYawRange)
+	{
+		int ActorYaw = GetPositiveAngle(GetActorRotation().Yaw);
+		int ControlYaw = GetWorld()->GetFirstPlayerController()->GetControlRotation().Yaw;
+		if (ActorYaw != ControlYaw)
+		{
+			if (GetLeftOrRight(ActorYaw, ControlYaw) == EPointLocation::Left && AxisValue < 0)
+			{
+				if (GetLeftOrRight(GetPositiveAngle(ActorYaw - LeftYawRange), ControlYaw) == EPointLocation::Left) return;
+				
+			}
+				
+			if (GetLeftOrRight(ActorYaw, ControlYaw) == EPointLocation::Right && AxisValue > 0)
+			{
+				if (GetLeftOrRight(GetPositiveAngle(ActorYaw + RightYawRange), ControlYaw) == EPointLocation::Right) return;
+
+			}
+		}
+
+	}
+	
 	AddControllerYawInput(AxisValue);
+	
+	
 }
 
 void AClimbingCharacter::Jump()
@@ -166,6 +190,12 @@ void AClimbingCharacter::Jump()
 	if (ClimbingMovement->GetCurrentClimbingMode() == EClimbingPawnModeType::Run)
 	{
 		Super::Jump();
+	}
+	else if (ClimbingMovement->GetCurrentClimbingMode() == EClimbingPawnModeType::LeftWallRun || ClimbingMovement->GetCurrentClimbingMode() == EClimbingPawnModeType::RightWallRun)
+	{
+		static_cast<FClimbingPawnModeLeftWallRun*>(&ClimbingMovement->GetMode(ClimbingMovement->GetCurrentClimbingMode()))->SetUnsetFromJump();
+
+		ClimbingMovement->DoJump(false);
 	}
 	else
 	{
@@ -195,6 +225,7 @@ void AClimbingCharacter::CrouchFunk()
 	case EClimbingPawnModeType::LeftWallRun:
 	case EClimbingPawnModeType::RightWallRun:
 	case EClimbingPawnModeType::ZipLine:
+	case EClimbingPawnModeType::LadderMove:
 		
 		ClimbingMovement->SetClimbMode(EClimbingPawnModeType::Run);
 
@@ -258,4 +289,68 @@ void AClimbingCharacter::ChangeView(bool FistPirson)
 		}
 	}
 
+}
+
+float AClimbingCharacter::GetAxisValueBP(FName NameAxis)
+{ 
+	if (InputComponent) return InputComponent->GetAxisValue(NameAxis); 
+
+	else return 0; 
+}
+
+void AClimbingCharacter::BlockCameraYawRangeFromCharacter(float _LeftYawRange, float _RightYawRange)
+{
+
+	LeftYawRange = _LeftYawRange;
+
+	RightYawRange = _RightYawRange;
+	
+	BlockYawRange = true;
+	
+}
+
+float AClimbingCharacter::GetPositiveAngle(float Angle)
+{
+	if (std::abs(Angle) > 360)
+	{
+		if (Angle < 0) Angle += 360;
+
+		if (Angle > 0) Angle -= 360;
+	}
+
+	if (Angle < 0)
+	{
+		return Angle + 360;
+	}
+	else
+	{
+		return Angle;
+	}
+}
+
+EPointLocation AClimbingCharacter::GetLeftOrRight(float BaseAngle, float Point)
+{
+
+	float Distance = Point - BaseAngle;
+
+	if (Distance > 0)
+	{
+		if (Distance < 180) return EPointLocation::Right;
+		else return EPointLocation::Left;
+	}
+	else
+	{
+		if (std::abs(Distance) < 180) return EPointLocation::Left;
+		else return EPointLocation::Right;
+	}
+}
+
+
+void AClimbingCharacter::QuickTurn()
+{
+	FRotator ControlRotation = GetControlRotation();
+
+	ControlRotation.Yaw += 180;
+
+	GetController()->SetControlRotation(ControlRotation);
 }

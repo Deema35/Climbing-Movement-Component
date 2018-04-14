@@ -3,10 +3,16 @@
 #pragma once
 
 #include "GameFramework/Character.h"
-
+#include "ClimbingSystemCore.h"
 #include "ClimbingCharacter.generated.h"
 
 
+
+enum class EPointLocation : uint8
+{
+	Right,
+	Left,
+};
 
 UCLASS()
 class CLIMBINGPAWNMOVEMENTCOMPONENTRUNTIME_API AClimbingCharacter : public ACharacter
@@ -18,6 +24,10 @@ public:
 		class USpringArmComponent* CameraSpringArm;
 	UPROPERTY(Category = Character, VisibleAnywhere, BlueprintReadOnly)
 		class UCameraComponent* Camera;
+
+	UPROPERTY(Category = "ClimbingCharacter", BlueprintReadOnly)
+
+		FVector InputDeltaVector;
 
 	// Sets default values for this pawn's properties
 	//AClimbingCharacter();
@@ -47,6 +57,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "ClimbingCharacter")
 		void ChangeView(bool FistPirson);
 
+	UFUNCTION(BlueprintPure, Category = "ClimbingCharacter")
+		float GetAxisValueBP(FName NameAxis);
+
+	UFUNCTION(BlueprintPure, Category = "ClimbingCharacter")
+		float VectorXYAngleBP(FVector V1, FVector V2) { return VectorXYAngle(V1, V2); }
+
 	void SwitchView();
 
 	void CrouchFunk();
@@ -55,14 +71,22 @@ public:
 	
 	virtual void NotifyActorBeginOverlap(AActor* OtherActor) override;
 
+	void BlockCameraYawRangeFromCharacter(float LeftYawRange, float RightYawRange);
+
+	void UnBlockCameraYawRange() { BlockYawRange = false; }
+
+	float GetPositiveAngle(float Angle);
+
+	EPointLocation GetLeftOrRight(float BaseAngle, float Point);
+
+	void QuickTurn();
+
 public:
 
 	bool bFistPirsonView;
 
 	class AOverlapObject* OverlopObject;
 
-	class AZipLine* ZipLine;
-	
 private:
 	/** Pointer to climbing movement component*/
 	UPROPERTY(Category = Character, VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
@@ -74,5 +98,10 @@ private:
 
 		friend class UClimbingPawnMovementComponent;
 
-		
+		float LeftYawRange;
+
+		float RightYawRange;
+
+		bool BlockYawRange = false;
+
 };

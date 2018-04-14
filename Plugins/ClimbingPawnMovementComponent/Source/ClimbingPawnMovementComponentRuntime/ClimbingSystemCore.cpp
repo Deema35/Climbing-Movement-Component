@@ -72,8 +72,8 @@ bool TraceLine(UWorld* World, AActor* ActorToIgnore, const FVector& Start, const
 
 float VectorXYAngle(FVector V1, FVector V2)
 {
-	float V1Len = pow(pow(V1.X, 2) + pow(V1.Y, 2), 0.5);
-	float V2Len = pow(pow(V2.X, 2) + pow(V2.Y, 2), 0.5);
+	float V1Len = V1.Size2D();
+	float V2Len = V2.Size2D();
 
 	float ScalarProduct = (V1.X * V2.X + V1.Y * V2.Y);
 	float CosVek = ScalarProduct / (V1Len * V2Len);

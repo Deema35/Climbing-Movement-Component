@@ -8,16 +8,13 @@
 #include "Components/BoxComponent.h"
 #include "ClimbingPawnMode.h"
 
-EClimbingPawnModeType AOverlapObject::GetObjectType() const
-{
-	return ObjectType;
-}
+//**********************************************************
+//AZipLine
+//***********************************************************
 
 AZipLine::AZipLine()
 {
 	
-	ObjectType = EClimbingPawnModeType::ZipLine;
-	SplineHeight = 200;
 
 	Pivot = CreateDefaultSubobject<USceneComponent>(TEXT("Pivot"));
 	Pivot->SetMobility(EComponentMobility::Static);
@@ -45,6 +42,8 @@ AZipLine::AZipLine()
 
 void AZipLine::OnConstruction(const FTransform& Transform)
 {
+	Super::OnConstruction(Transform);
+
 	FVector Loc;
 	FVector Tangent;
 
@@ -121,3 +120,44 @@ void AZipLine::SetupSpline()
 	
 }
 
+//**********************************************************
+//ALadder
+//***********************************************************
+
+
+ALadder::ALadder()
+{
+	Pivot = CreateDefaultSubobject<USceneComponent>(TEXT("Pivot"));
+	Pivot->SetMobility(EComponentMobility::Movable);
+	RootComponent = Pivot;
+	
+	LadderVolumeForward = CreateDefaultSubobject<UBoxComponent>(TEXT("LadderVolumeForward"));
+	
+	LadderVolumeForward->SetupAttachment(Pivot);
+	LadderVolumeForward->bGenerateOverlapEvents = true;
+
+	LadderVolumeBack = CreateDefaultSubobject<UBoxComponent>(TEXT("LadderVolumeBack"));
+
+	LadderVolumeBack->SetupAttachment(Pivot);
+	LadderVolumeBack->bGenerateOverlapEvents = true;
+
+	SetupLadderHeight();
+}
+
+void ALadder::OnConstruction(const FTransform& Transform)
+{
+	Super::OnConstruction(Transform);
+
+	SetupLadderHeight();
+
+}
+
+void ALadder::SetupLadderHeight()
+{
+	LadderVolumeForward->SetRelativeLocation(FVector(0, 0, LadderHeight / 2));
+	LadderVolumeForward->SetBoxExtent(FVector(5, 20, LadderHeight / 2));
+
+	LadderVolumeBack->SetRelativeLocation(FVector(10, 0, LadderHeight / 2));
+	LadderVolumeBack->SetBoxExtent(FVector(5, 20, LadderHeight / 2));
+	
+}

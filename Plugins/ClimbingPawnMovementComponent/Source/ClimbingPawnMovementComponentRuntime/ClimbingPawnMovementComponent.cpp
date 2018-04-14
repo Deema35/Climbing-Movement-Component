@@ -46,15 +46,24 @@ UClimbingPawnMovementComponent::UClimbingPawnMovementComponent(const class FObje
 	ModeStorage.IniciateComponents(ClimbModeList, ComponentGenerator);
 }
 
+void UClimbingPawnMovementComponent::BeginPlay()
+{
+	Super::BeginPlay();
+
+	float MinRunTime;
+
+	RunVelocytyCurve.GetRichCurve()->GetTimeRange(MinRunTime, MaxRunTime);
+}
+
 
 
 void  UClimbingPawnMovementComponent::TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction *ThisTickFunction)
 {
-	
 	if (!PawnOwner || !UpdatedComponent || ShouldSkipUpdate(DeltaTime))
 	{
 		return;
 	}
+	
 	
 
 	if (ModeStorage.Get(CurrentClimbingMode).Tick(DeltaTime))
@@ -64,46 +73,6 @@ void  UClimbingPawnMovementComponent::TickComponent(float DeltaTime, enum ELevel
 
 };
 
-void UClimbingPawnMovementComponent::DefineClimbMode()
-{
-
-	if (IsFalling())
-	{
-		if (ModeStorage.Get(EClimbingPawnModeType::Climb).CanSetMode()) SetClimbMode(EClimbingPawnModeType::Climb);
-		
-		if (ModeStorage.Get(EClimbingPawnModeType::JumpOverBarier).CanSetMode()) SetClimbMode(EClimbingPawnModeType::JumpOverBarier);
-
-		if (ModeStorage.Get(EClimbingPawnModeType::LeftWallRun).CanSetMode()) SetClimbMode(EClimbingPawnModeType::LeftWallRun);
-
-		if (ModeStorage.Get(EClimbingPawnModeType::RightWallRun).CanSetMode()) SetClimbMode(EClimbingPawnModeType::RightWallRun);
-	}
-	else
-	{
-		if (ModeStorage.Get(EClimbingPawnModeType::InclinedSlide).CanSetMode()) SetClimbMode(EClimbingPawnModeType::InclinedSlide);
-	}
-
-}
-
-void UClimbingPawnMovementComponent::DefineRunSpeed(float DeltaTime)
-{
-	
-	if (PawnOwner->InputComponent->GetAxisValue(TEXT("MoveForward")) > 0 && !Cast<AClimbingCharacter>(PawnOwner)->bIsCrouched && !IsFalling() && MinRunTime < MaxRunTime)
-	{
-		MinRunTime += DeltaTime;
-		
-	}
-
-	float XYVelocyty = pow(pow(Velocity.X, 2) + pow(Velocity.Y, 2), 0.5);
-	float MaxRunVelocyty;
-	float MinRunVelocyty;
-
-	RunVelocytyCurve.GetRichCurve()->GetValueRange(MinRunVelocyty, MaxRunVelocyty);
-
-	if (XYVelocyty < MinRunVelocyty - 100 || Cast<AClimbingCharacter>(PawnOwner)->bIsCrouched) //This mean character stop
-	{
-		RunVelocytyCurve.GetRichCurve()->GetTimeRange(MinRunTime, MaxRunTime);
-	}	
-}
 
 void UClimbingPawnMovementComponent::SetClimbMode(EClimbingPawnModeType ClimbingMode)
 {
@@ -136,10 +105,11 @@ float UClimbingPawnMovementComponent::GetMaxSpeed() const
 {
 	float MaxSpeed;
 	
+	float CurrentRunTime = MaxRunTime * RunSpeedValue;
 	
 	if (MovementMode == EMovementMode::MOVE_Walking || MovementMode == EMovementMode::MOVE_NavWalking || MovementMode == EMovementMode::MOVE_Falling)
 	{
-		MaxSpeed = RunVelocytyCurve.GetRichCurveConst()->Eval(MinRunTime);
+		MaxSpeed = RunVelocytyCurve.GetRichCurveConst()->Eval(CurrentRunTime);
 	}
 	else
 	{
@@ -149,12 +119,49 @@ float UClimbingPawnMovementComponent::GetMaxSpeed() const
 	return MaxSpeed;
 }
 
-void UClimbingPawnMovementComponent::MoveTo(const FVector Delta, const FRotator NewRotation)
+void UClimbingPawnMovementComponent::MoveTo(const FVector Delta, const FRotator NewRotation, bool CheckCollision)
 {
-	FHitResult Hit;
-	SafeMoveUpdatedComponent(Delta, NewRotation, true, Hit);
-	if (Hit.IsValidBlockingHit())
+	if (CheckCollision)
 	{
-		SlideAlongSurface(Delta, 1.f - Hit.Time, Hit.Normal, Hit, false);
+		FHitResult Hit;
+		SafeMoveUpdatedComponent(Delta, NewRotation, true, Hit);
+		if (Hit.IsValidBlockingHit())
+		{
+			SlideAlongSurface(Delta, 1.f - Hit.Time, Hit.Normal, Hit, false);
+		}
 	}
+	else
+	{
+		GetPawnOwner()->AddActorWorldOffset(Delta);
+		GetPawnOwner()->SetActorRotation(NewRotation);
+	}
+}
+
+void UClimbingPawnMovementComponent::RollCameraSet(int NewRoll)
+{
+
+	FRotator ControlRot = GetWorld()->GetFirstPlayerController()->GetControlRotation();
+
+	ControlRot.Roll = NewRoll;
+
+	GetWorld()->GetFirstPlayerController()->SetControlRotation(ControlRot);
+}
+
+void UClimbingPawnMovementComponent::YawCameraSet(int NewYaw)
+{
+	FRotator ControlRot = GetWorld()->GetFirstPlayerController()->GetControlRotation();
+
+	ControlRot.Yaw = NewYaw;
+
+	GetWorld()->GetFirstPlayerController()->SetControlRotation(ControlRot);
+}
+
+
+void UClimbingPawnMovementComponent::AddYawCamera(int DeltaYaw)
+{
+	FRotator ControlRot = GetWorld()->GetFirstPlayerController()->GetControlRotation();
+
+	ControlRot.Yaw += DeltaYaw;
+
+	GetWorld()->GetFirstPlayerController()->SetControlRotation(ControlRot);
 }

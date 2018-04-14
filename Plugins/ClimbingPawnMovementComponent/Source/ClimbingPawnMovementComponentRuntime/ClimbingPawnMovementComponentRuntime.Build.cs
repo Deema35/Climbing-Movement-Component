@@ -6,6 +6,8 @@ public class ClimbingPawnMovementComponentRuntime : ModuleRules
 {
 	public ClimbingPawnMovementComponentRuntime(ReadOnlyTargetRules ROTargetRules) : base(ROTargetRules)
     {
+        bEnableExceptions = true; // error C4577
+
         PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs; // Enabel IWYU
 
         PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore" });

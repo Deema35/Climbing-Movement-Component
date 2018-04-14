@@ -7,9 +7,10 @@
 
 class UClimbingPawnMovementComponent;
 class FClimbingPawnModeBase;
+class AZipLine;
+class ALadder;
 
-
-UENUM()
+UENUM(BlueprintType)
 enum class EClimbingPawnModeType : uint8
 {
 	Run,
@@ -23,6 +24,7 @@ enum class EClimbingPawnModeType : uint8
 	InclinedSlide,
 	LiftOnWall,
 	RoundingTheCorner,
+	LadderMove,
 	end
 };
 
@@ -53,11 +55,11 @@ public:
 
 	virtual bool DoJump(bool bReplayingMoves, bool& ReturnValue) { ReturnValue = false;  return false; }
 
+	void BlockState(std::chrono::milliseconds BlockTime);
+
 protected:
 
 	UClimbingPawnMovementComponent& MovementComponent;
-
-	void BlockState(float BlockTime);
 
 	bool IsStateBlock() { return bBlockState; }
 
@@ -65,7 +67,7 @@ protected:
 
 private:
 
-	static void UnblockState(FClimbingPawnModeBase* ClimbingPawnMode, float BlockTime);
+	static void UnblockState(FClimbingPawnModeBase* ClimbingPawnMode, std::chrono::milliseconds BlockTime);
 
 
 private:
@@ -87,6 +89,17 @@ public:
 	virtual bool Tick(float DeltaTime) override;
 
 	virtual bool DoJump(bool bReplayingMoves, bool& ReturnValue) override;
+
+private:
+
+	inline void DefineClimbMode();
+
+	inline void DefineRunSpeed(float DeltaTime);
+
+	inline void FallingControl();
+
+private:
+
 };
 
 class FClimbingPawnModeClimb : public FClimbingPawnModeBase
@@ -128,6 +141,8 @@ public:
 
 	virtual bool DoJump(bool bReplayingMoves, bool& ReturnValue) override;
 
+	void SetUnsetFromJump() { bUnsetFromJump = true; }
+
 protected:
 
 	virtual int GetRayEndSign() const { return -1; }
@@ -135,6 +150,10 @@ protected:
 	virtual int GetCharRotation() const { return 270; }
 
 	bool ChackNeedStop();
+
+private:
+
+	bool bUnsetFromJump = false;
 };
 
 class FClimbingPawnModeRightWallRun : public FClimbingPawnModeLeftWallRun
@@ -199,6 +218,16 @@ public:
 
 	virtual bool CanSetMode() override;
 
+	virtual void SetMode()  override;
+
+	virtual bool DoJump(bool bReplayingMoves, bool& ReturnValue) override;
+
+	virtual bool Tick(float DeltaTime) override;
+
+private:
+
+	int CharRotashen;
+
 };
 
 
@@ -221,6 +250,10 @@ public:
 	virtual bool CheckDeltaVectorInCurrentState(const FVector& InputDeltaVector, FVector& CheckDeltaVector, FRotator& CheckRotation) override;
 
 	virtual bool DoJump(bool bReplayingMoves, bool& ReturnValue) override;
+
+private:
+
+	AZipLine* CurrentZipLine;
 };
 
 class FClimbingPawnModeInclinedSlide : public FClimbingPawnModeBase
@@ -250,13 +283,11 @@ public:
 
 	virtual EClimbingPawnModeType GetType() const override { return EClimbingPawnModeType::LiftOnWall; }
 
-	virtual bool Tick(float DeltaTime ) override;
-
 	virtual void UnSetMode() override;
 
-	virtual bool CanSetMode() override;
+	virtual void SetMode() override;
 
-	virtual bool CheckDeltaVectorInCurrentState(const FVector& InputDeltaVector, FVector& CheckDeltaVector, FRotator& CheckRotation) override;
+	virtual bool CanSetMode() override;
 
 };
 
@@ -301,4 +332,45 @@ public:
 private:
 
 	FRoundingTheCornerData RoundingTheCornerData;
+};
+
+class FClimbingPawnModeLadderMove : public FClimbingPawnModeBase
+{
+public:
+	FClimbingPawnModeLadderMove(UClimbingPawnMovementComponent& MovementComponent) : FClimbingPawnModeBase(MovementComponent) {}
+
+	virtual EClimbingPawnModeType GetType() const override { return EClimbingPawnModeType::LadderMove; }
+
+	virtual bool Tick(float DeltaTime) override;
+
+	virtual void SetMode() override;
+
+	virtual void UnSetMode() override;
+
+	virtual bool CanSetMode() override;
+
+	virtual bool CheckDeltaVectorInCurrentState(const FVector& InputDeltaVector, FVector& CheckDeltaVector, FRotator& CheckRotation) override;
+
+	virtual bool DoJump(bool bReplayingMoves, bool& ReturnValue) override;
+
+	void BlockUnSet(std::chrono::milliseconds BlockTime);
+private:
+
+	bool IsUnSetBlock() { return bBlockUnset; }
+
+	static void UnBlockUnSet(FClimbingPawnModeLadderMove* ClimbingPawnMode, std::chrono::milliseconds BlockTime);
+
+private:
+
+	ALadder* CurrentLadder;
+
+	float CurrentCharacterPosition = 0;
+
+	std::future<void> UsetStateFuture;
+
+	std::atomic<bool> bBlockUnset = false;
+
+	int DeltaRotate = 0;
+
+	int DeltaOffset = 0;
 };

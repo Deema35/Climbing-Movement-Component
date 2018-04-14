@@ -3,20 +3,17 @@
 #pragma once
 
 #include "GameFramework/Actor.h"
+#include "ClimbingPawnMode.h"
 #include "OverlapObject.generated.h"
+
 
 UCLASS()
 class CLIMBINGPAWNMOVEMENTCOMPONENTRUNTIME_API AOverlapObject : public AActor
 {
 	GENERATED_BODY()
 public:
-	enum class EClimbingPawnModeType GetObjectType() const;
+	virtual EClimbingPawnModeType GetObjectType() const { throw; }
 
-	
-
-protected:
-	UPROPERTY(Category = ObjectType, VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	EClimbingPawnModeType ObjectType;
 	
 };
 
@@ -30,9 +27,9 @@ public:
 
 	virtual void OnConstruction(const FTransform& Transform) override;
 
+	virtual EClimbingPawnModeType GetObjectType() const override { return EClimbingPawnModeType::ZipLine; }
 
-
-	/** The main skeletal mesh associated with this Character (optional sub-object). */
+public:
 	UPROPERTY(Category = ZipLine, VisibleDefaultsOnly, BlueprintReadOnly)
 	class UStaticMeshComponent* StartBase;
 
@@ -52,7 +49,7 @@ public:
 	UStaticMesh* RopeMesh;
 
 	UPROPERTY(Category = ZipLine, EditAnywhere, BlueprintReadOnly)
-		float SplineHeight;
+		float SplineHeight = 200;
 
 	//UPROPERTY(Category = ZipLine, EditAnywhere, BlueprintReadOnly)
 		//TArray<class USplineMeshComponent*> AddedSplineMeshComponents;
@@ -63,9 +60,42 @@ public:
 //	class UArrowComponent* ArrowComponent;
 //#endif
 
-protected:
+private:
+	
+	void SetupSpline();
+
+};
+
+UCLASS()
+class CLIMBINGPAWNMOVEMENTCOMPONENTRUNTIME_API ALadder : public AOverlapObject
+{
+	GENERATED_BODY()
+public:
+
+	ALadder();
+
+	virtual EClimbingPawnModeType GetObjectType() const override { return EClimbingPawnModeType::LadderMove; }
+
+	UPROPERTY(Category = Ladder, VisibleDefaultsOnly, BlueprintReadOnly)
+		class UBoxComponent* LadderVolumeForward;
+
+	UPROPERTY(Category = Ladder, VisibleDefaultsOnly, BlueprintReadOnly)
+		class UBoxComponent* LadderVolumeBack;
+
+	UPROPERTY(Category = Ladder, EditAnywhere, BlueprintReadOnly)
+		float LadderHeight = 300;
+
+	UPROPERTY(Category = Ladder, EditAnywhere, BlueprintReadOnly)
+		bool ClosedUp = false;
+
+	UPROPERTY(Category = ZipLine, VisibleDefaultsOnly, BlueprintReadOnly)
+		USceneComponent* Pivot;
+
 	
 
-	void SetupSpline();
+	virtual void OnConstruction(const FTransform& Transform) override;
+private:
+
+	void SetupLadderHeight();
 
 };

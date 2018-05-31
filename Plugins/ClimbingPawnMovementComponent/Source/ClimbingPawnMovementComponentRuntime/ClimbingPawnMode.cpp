@@ -6,6 +6,7 @@
 #include "OverlapObject.h"
 #include "Components/BoxComponent.h"
 #include "Components/SplineComponent.h"
+#include "Components/InputComponent.h"
 
 //***********************************************
 //EClimbingPawnModeType
@@ -66,7 +67,7 @@ FClimbingPawnModeBase* EClimbingPawnModeTypeCreate(EClimbingPawnModeType ModeTyp
 
 		return new FClimbingPawnModeLadderMove(MovementComponent);
 
-	default: throw FString("Bad EClimbingPawnModeType");
+	default: throw;
 
 	}
 }
@@ -122,14 +123,25 @@ void FClimbingPawnModeRun::FallingControl()
 	AClimbingCharacter* ClimbingChar = Cast<AClimbingCharacter>(MovementComponent.GetPawnOwner());
 	FRotator ControlRot = ClimbingChar->GetControlRotation();
 
-	FVector StartRight = ClimbingChar->GetActorLocation() + ClimbingChar->GetActorRightVector() * 40;
-	FVector EndRight = StartRight + ClimbingChar->GetActorForwardVector() * 48;
+	FVector StartRightTop = ClimbingChar->GetActorLocation() + ClimbingChar->GetActorRightVector() * 40 + ClimbingChar->GetActorUpVector() * 90;
+	FVector EndRightTop = StartRightTop + ClimbingChar->GetActorForwardVector() * 48;
 
-	FVector StartLeft = ClimbingChar->GetActorLocation() - ClimbingChar->GetActorRightVector() * 40;
-	FVector EndLeft = StartLeft + ClimbingChar->GetActorForwardVector() * 48;
+	FVector StartLeftTop = ClimbingChar->GetActorLocation() - ClimbingChar->GetActorRightVector() * 40 + ClimbingChar->GetActorUpVector() * 90;
+	FVector EndLeftTop = StartLeftTop + ClimbingChar->GetActorForwardVector() * 48;
 
-	if (MovementComponent.IsFalling() && ClimbingChar->InputComponent->GetAxisValue(TEXT("MoveForward")) > 0 && ControlRot.Pitch > 270 && ControlRot.Pitch < 320 &&
-		!TraceLine(MovementComponent.GetWorld(), ClimbingChar, StartRight, EndRight) && !TraceLine(MovementComponent.GetWorld(), ClimbingChar, StartLeft, EndLeft))
+	FVector StartRightBottom = ClimbingChar->GetActorLocation() + ClimbingChar->GetActorRightVector() * 40 - ClimbingChar->GetActorUpVector() * 90;
+	FVector EndRightBottom = StartRightBottom + ClimbingChar->GetActorForwardVector() * 48;
+
+	FVector StartLeftBottom = ClimbingChar->GetActorLocation() - ClimbingChar->GetActorRightVector() * 40 - ClimbingChar->GetActorUpVector() * 90;
+	FVector EndLeftBottom = StartLeftBottom + ClimbingChar->GetActorForwardVector() * 48;
+
+
+	if (MovementComponent.IsFalling() && MovementComponent.Velocity.Z < 0 && ClimbingChar->InputComponent->GetAxisValue(TEXT("MoveForward")) > 0 && ControlRot.Pitch > 270 && 
+		ControlRot.Pitch < 320 &&
+		!TraceLine(MovementComponent.GetWorld(), ClimbingChar, StartRightTop, EndRightTop) && 
+		!TraceLine(MovementComponent.GetWorld(), ClimbingChar, StartLeftTop, EndLeftTop) && 
+		!TraceLine(MovementComponent.GetWorld(), ClimbingChar, StartRightBottom, EndRightBottom) && 
+		!TraceLine(MovementComponent.GetWorld(), ClimbingChar, StartLeftBottom, EndLeftBottom))
 	{
 		MovementComponent.Velocity = MovementComponent.Velocity.Size() * ClimbingChar->GetControlRotation().Vector();
 	}
@@ -564,19 +576,31 @@ bool FClimbingPawnModeLeftWallRun::DoJump(bool bReplayingMoves, bool& ReturnValu
 
 
 	MovementComponent.SetClimbMode(EClimbingPawnModeType::Run);
+
+	FVector JumpVelocety;
 	
 	float Angle = VectorXYAngle(ClimbingChar->GetControlRotation().Vector(), ClimbingChar->GetActorForwardVector());
-	
-	if ((Angle * GetRayEndSign()) > -50  && (Angle  * GetRayEndSign()) < 15)
-	{
-		MovementComponent.Velocity = ClimbingChar->GetActorForwardVector() * MovementComponent.WallRunJumpForwardVelocyty + FVector(0, 0, 1) * MovementComponent.WallRunJumpUpVelocyty +
-			ClimbingChar->GetActorRightVector() * 50 * -GetRayEndSign();
 
+	FVector StartUpRay = ClimbingChar->GetActorLocation();
+	FVector EndUpRay = StartUpRay + ClimbingChar->GetActorUpVector() * 200;
+
+	if (TraceLine(MovementComponent.GetWorld(), ClimbingChar, StartUpRay, EndUpRay))
+	{
+		JumpVelocety = ClimbingChar->GetControlRotation().Vector() * MovementComponent.WallRunJumpForwardVelocyty * 2;
+	}
+	else if ((Angle * GetRayEndSign()) > -50  && (Angle  * GetRayEndSign()) < 15)
+	{
+		JumpVelocety = ClimbingChar->GetActorForwardVector() * MovementComponent.WallRunJumpForwardVelocyty + ClimbingChar->GetActorRightVector() * 50 * -GetRayEndSign() +
+			FVector(0, 0, 1) * MovementComponent.WallRunJumpUpVelocyty;
 	}
 	else
 	{
-		MovementComponent.Velocity = ClimbingChar->GetControlRotation().Vector()  * MovementComponent.WallRunJumpForwardVelocyty + FVector(0, 0, 1) * MovementComponent.WallRunJumpUpVelocyty;
+		JumpVelocety = ClimbingChar->GetControlRotation().Vector()  * MovementComponent.WallRunJumpForwardVelocyty + FVector(0, 0, 1) * MovementComponent.WallRunJumpUpVelocyty;
+		
 	}
+
+
+	MovementComponent.Velocity = JumpVelocety;
 
 	ReturnValue = true;
 	return false;

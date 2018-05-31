@@ -3,7 +3,7 @@
 #include "ClimbingSystemCore.h"
 #include "Engine/World.h"
 #include "DrawDebugHelpers.h"
-
+#include "ClimbingPawnMode.h"
 
 bool TraceLine(UWorld* World, AActor* ActorToIgnore, const FVector& Start, const FVector& End, EDrawDebugTraceType DrawDebugType, bool ReturnPhysMat)
 {
@@ -86,30 +86,29 @@ float VectorXYAngle(FVector V1, FVector V2)
 //***********************************************
 //TLevelBilderComponentStorage
 //***********************************************
+TClimbingModeStorage::TClimbingModeStorage(UClimbingPawnMovementComponent& _OwningClimbiingComponent) : OwningClimbiingComponent(_OwningClimbiingComponent) {}
 
-template <typename T, typename Tid>
-T& TClimbingModeStorage<T, Tid>::Get(Tid ComponentType)
+FClimbingPawnModeBase& TClimbingModeStorage::Get(EClimbingPawnModeType ComponentType)
 {
 	if (LevelComponents.empty())
 	{
-		throw FString("Component storage is empty");
+		IniciateComponents();
 	}
 
 	return *LevelComponents[ComponentType].get();
 }
 
-template <typename T, typename Tid>
-void TClimbingModeStorage<T, Tid>::IniciateComponents(std::vector <Tid> ComponentsForCreate, const std::function<T* (Tid ComponentID)> ComponentCreater)
-{
-	LevelComponents.clear();
 
-	for (int i = 0; i < ComponentsForCreate.size(); i++)
+void TClimbingModeStorage::IniciateComponents()
+{
+
+	for (int i = 0; i < (int)EClimbingPawnModeType::end; i++)
 	{
-		T* NewComponentPointer = ComponentCreater(ComponentsForCreate[i]);
+		FClimbingPawnModeBase* NewComponentPointer = EClimbingPawnModeTypeCreate((EClimbingPawnModeType)i, OwningClimbiingComponent);
 		if (NewComponentPointer)
 		{
-			std::shared_ptr<T> NewComponent(NewComponentPointer);
-			LevelComponents.insert(std::make_pair(ComponentsForCreate[i], NewComponent));
+			
+			LevelComponents.insert(std::make_pair((EClimbingPawnModeType)i, std::unique_ptr<FClimbingPawnModeBase>(NewComponentPointer)));
 		}
 	}
 }

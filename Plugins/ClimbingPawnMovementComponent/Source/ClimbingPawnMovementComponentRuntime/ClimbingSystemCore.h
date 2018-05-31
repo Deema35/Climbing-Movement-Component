@@ -9,6 +9,9 @@
 
 class AActor;
 struct FHitResult;
+class FClimbingPawnModeBase;
+class UClimbingPawnMovementComponent;
+enum class EClimbingPawnModeType : uint8;
 
 enum class EDrawDebugTraceType : uint8
 {
@@ -25,18 +28,21 @@ bool TraceLine(UWorld* World, AActor* ActorToIgnore, const FVector& Start, const
 
 float VectorXYAngle(FVector V1, FVector V2);
 
-template <typename T, typename Tid>
+
 class TClimbingModeStorage
 {
 public:
 
-	T& Get(Tid ComponentType);
+	TClimbingModeStorage(UClimbingPawnMovementComponent& _OwningClimbiingComponent);
 
-	void IniciateComponents(std::vector<Tid> ComponentsForCreate, const std::function<T* (Tid ComponentID)> ComponentCreater);
+	FClimbingPawnModeBase& Get(EClimbingPawnModeType ComponentType);
 
 private:
+	void IniciateComponents();
 
-	std::map<Tid, std::shared_ptr<T>> LevelComponents;
+	std::map<EClimbingPawnModeType, std::unique_ptr<FClimbingPawnModeBase>> LevelComponents;
+
+	UClimbingPawnMovementComponent& OwningClimbiingComponent;
 };
 
 

@@ -172,7 +172,7 @@ public:
 
 	inline void RollCameraSet(int NewRoll);
 	
-	FClimbingPawnModeBase& GetMode(EClimbingPawnModeType ModeType) { return ModeStorage.Get(ModeType); }
+	FClimbingPawnModeBase& GetMode(EClimbingPawnModeType ModeType) { return ModeStorage->Get(ModeType); }
 
 public:
 
@@ -184,5 +184,5 @@ private:
 
 	EClimbingPawnModeType CurrentClimbingMode;
 	
-	TClimbingModeStorage<FClimbingPawnModeBase, EClimbingPawnModeType> ModeStorage;
+	std::unique_ptr<TClimbingModeStorage> ModeStorage;
 };

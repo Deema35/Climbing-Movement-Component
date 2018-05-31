@@ -9,7 +9,8 @@
 #include "ClimbingPawnMode.h"
 #include <vector>
 
-UClimbingPawnMovementComponent::UClimbingPawnMovementComponent(const class FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
+UClimbingPawnMovementComponent::UClimbingPawnMovementComponent(const class FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer),
+ModeStorage(std::unique_ptr<TClimbingModeStorage> (new TClimbingModeStorage(*this)))
 {
 	MaxWalkSpeed = 500;
 	JumpZVelocity = 400;
@@ -30,20 +31,6 @@ UClimbingPawnMovementComponent::UClimbingPawnMovementComponent(const class FObje
 
 
 	CurrentClimbingMode = EClimbingPawnModeType::Run;
-
-	std::vector<EClimbingPawnModeType> ClimbModeList;
-
-	for (int i = 0; i < (int)EClimbingPawnModeType::end; i++)
-	{
-		ClimbModeList.push_back((EClimbingPawnModeType)i);
-	}
-
-	auto ComponentGenerator = [&](EClimbingPawnModeType ModeType)
-	{
-		return EClimbingPawnModeTypeCreate(ModeType, *this);
-	};
-
-	ModeStorage.IniciateComponents(ClimbModeList, ComponentGenerator);
 }
 
 void UClimbingPawnMovementComponent::BeginPlay()
@@ -66,7 +53,7 @@ void  UClimbingPawnMovementComponent::TickComponent(float DeltaTime, enum ELevel
 	
 	
 
-	if (ModeStorage.Get(CurrentClimbingMode).Tick(DeltaTime))
+	if (ModeStorage->Get(CurrentClimbingMode).Tick(DeltaTime))
 	{
 		Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 	}
@@ -77,11 +64,11 @@ void  UClimbingPawnMovementComponent::TickComponent(float DeltaTime, enum ELevel
 void UClimbingPawnMovementComponent::SetClimbMode(EClimbingPawnModeType ClimbingMode)
 {
 	if (CurrentClimbingMode == ClimbingMode) return;
-	ModeStorage.Get(CurrentClimbingMode).UnSetMode();
+	ModeStorage->Get(CurrentClimbingMode).UnSetMode();
 
 	CurrentClimbingMode = ClimbingMode;
 	
-	ModeStorage.Get(ClimbingMode).SetMode();
+	ModeStorage->Get(ClimbingMode).SetMode();
 	
 }
 
@@ -90,7 +77,7 @@ bool UClimbingPawnMovementComponent::DoJump(bool bReplayingMoves)
 {
 	bool ReturnValue;
 
-	if (ModeStorage.Get(CurrentClimbingMode).DoJump(bReplayingMoves, ReturnValue))
+	if (ModeStorage->Get(CurrentClimbingMode).DoJump(bReplayingMoves, ReturnValue))
 	{
 		return Super::DoJump(bReplayingMoves);
 	}

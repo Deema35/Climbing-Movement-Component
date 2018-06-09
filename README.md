@@ -35,3 +35,5 @@ To create Visual Studio project file right click on UE project file and choose "
 [Video](https://www.youtube.com/watch?v=dSjZBR9v4DA&feature=youtu.be)
 
 [Habrahabr.ru](https://habrahabr.ru/post/303394/)
+
+[Playable demo game](https://cloud.mail.ru/public/6crd/aUQkDzpfF/)

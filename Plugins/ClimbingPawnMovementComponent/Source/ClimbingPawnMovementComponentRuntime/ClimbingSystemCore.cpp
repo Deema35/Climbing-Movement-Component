@@ -86,29 +86,34 @@ float VectorXYAngle(FVector V1, FVector V2)
 //***********************************************
 //TLevelBilderComponentStorage
 //***********************************************
-TClimbingModeStorage::TClimbingModeStorage(UClimbingPawnMovementComponent& _OwningClimbiingComponent) : OwningClimbiingComponent(_OwningClimbiingComponent) {}
 
-FClimbingPawnModeBase& TClimbingModeStorage::Get(EClimbingPawnModeType ComponentType)
+TClimbingModeStorage::TClimbingModeStorage(UClimbingPawnMovementComponent& _OwningClimbiingComponent) : OwningClimbiingComponent(_OwningClimbiingComponent)
 {
-	if (LevelComponents.empty())
-	{
-		IniciateComponents();
-	}
+	LevelComponents.reserve(size_t(EClimbingPawnModeType::end));
 
-	return *LevelComponents[ComponentType].get();
+	for (size_t i = 0; i < size_t(EClimbingPawnModeType::end); i++)
+	{
+		LevelComponents.push_back(std::unique_ptr<FClimbingPawnModeBase>(EClimbingPawnModeTypeCreate(EClimbingPawnModeType(i), OwningClimbiingComponent)));
+	}
 }
 
 
-void TClimbingModeStorage::IniciateComponents()
+FClimbingPawnModeBase& TClimbingModeStorage::Get(EClimbingPawnModeType ComponentType)
 {
-
-	for (int i = 0; i < (int)EClimbingPawnModeType::end; i++)
+	if (ComponentType >= EClimbingPawnModeType::end)
 	{
-		FClimbingPawnModeBase* NewComponentPointer = EClimbingPawnModeTypeCreate((EClimbingPawnModeType)i, OwningClimbiingComponent);
-		if (NewComponentPointer)
-		{
-			
-			LevelComponents.insert(std::make_pair((EClimbingPawnModeType)i, std::unique_ptr<FClimbingPawnModeBase>(NewComponentPointer)));
-		}
+		throw;
 	}
+
+	return *LevelComponents[size_t(ComponentType)].get();
+}
+
+const FClimbingPawnModeBase& TClimbingModeStorage::Get(EClimbingPawnModeType ComponentType) const
+{
+	if (ComponentType >= EClimbingPawnModeType::end)
+	{
+		throw;
+	}
+
+	return *LevelComponents[size_t(ComponentType)].get();
 }

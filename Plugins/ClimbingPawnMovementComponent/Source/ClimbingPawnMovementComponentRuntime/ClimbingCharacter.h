@@ -50,7 +50,7 @@ public:
 
 	void CameraYaw(float AxisValue);
 
-	UFUNCTION(BlueprintCallable, Category = "Pawn|Character")
+	//UFUNCTION(BlueprintCallable, Category = "Pawn|Character")
 		virtual void Jump() override;
 
 

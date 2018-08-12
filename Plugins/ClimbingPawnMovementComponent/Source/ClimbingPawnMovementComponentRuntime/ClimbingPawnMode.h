@@ -35,7 +35,7 @@ class FClimbingPawnModeBase
 public:
 	FClimbingPawnModeBase(UClimbingPawnMovementComponent& _MovementComponent) : MovementComponent(_MovementComponent) {}
 
-	virtual ~FClimbingPawnModeBase() {}
+	virtual ~FClimbingPawnModeBase() = default;
 
 	virtual EClimbingPawnModeType GetType() const = 0;
 

@@ -37,10 +37,12 @@ public:
 
 	FClimbingPawnModeBase& Get(EClimbingPawnModeType ComponentType);
 
-private:
-	void IniciateComponents();
+	const FClimbingPawnModeBase& Get(EClimbingPawnModeType ComponentType) const;
 
-	std::map<EClimbingPawnModeType, std::unique_ptr<FClimbingPawnModeBase>> LevelComponents;
+
+private:
+
+	std::vector<std::unique_ptr<FClimbingPawnModeBase>> LevelComponents;
 
 	UClimbingPawnMovementComponent& OwningClimbiingComponent;
 };

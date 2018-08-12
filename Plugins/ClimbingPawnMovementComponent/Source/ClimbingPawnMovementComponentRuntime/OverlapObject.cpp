@@ -26,7 +26,7 @@ AZipLine::AZipLine()
 	Spline = CreateDefaultSubobject<USplineComponent>(TEXT("Spline"));
 	Spline->SetupAttachment(Pivot);
 	EndBox = CreateDefaultSubobject<UBoxComponent>(TEXT(" EndBox"));
-	EndBox->bGenerateOverlapEvents = true;
+	EndBox->SetGenerateOverlapEvents(true);
 	EndBox->SetupAttachment(Pivot);
 	EndBox->SetBoxExtent(FVector(30, 30, 0.5 * SplineHeight));
 
@@ -134,12 +134,12 @@ ALadder::ALadder()
 	LadderVolumeForward = CreateDefaultSubobject<UBoxComponent>(TEXT("LadderVolumeForward"));
 	
 	LadderVolumeForward->SetupAttachment(Pivot);
-	LadderVolumeForward->bGenerateOverlapEvents = true;
+	LadderVolumeForward->SetGenerateOverlapEvents(true);
 
 	LadderVolumeBack = CreateDefaultSubobject<UBoxComponent>(TEXT("LadderVolumeBack"));
 
 	LadderVolumeBack->SetupAttachment(Pivot);
-	LadderVolumeBack->bGenerateOverlapEvents = true;
+	LadderVolumeBack->SetGenerateOverlapEvents(true);
 
 	SetupLadderHeight();
 }

@@ -215,7 +215,7 @@ void FClimbingPawnModeRun::DefineRunSpeed(float DeltaTime)
 		MovementComponent.CurrentRunTime = 0;
 	}
 
-	if (MovementComponent.CurrentRunTime < MovementComponent.MaxRunTime && MovementComponent.ClimbingChar->InputComponent->GetAxisValue(TEXT("MoveForward")) > 0)
+	else if (MovementComponent.CurrentRunTime < MovementComponent.MaxRunTime && MovementComponent.ClimbingChar->InputComponent->GetAxisValue(TEXT("MoveForward")) > 0)
 	{
 		MovementComponent.CurrentRunTime += DeltaTime;
 

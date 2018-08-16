@@ -15,6 +15,9 @@ class FClimbingPawnModeBase;
 UCLASS()
 class CLIMBINGPAWNMOVEMENTCOMPONENTRUNTIME_API UClimbingPawnMovementComponent : public UCharacterMovementComponent
 {
+	friend  class FClimbingPawnModeRun;
+	friend  class FClimbingPawnModeClimb;
+
 	GENERATED_UCLASS_BODY()
 
 public:
@@ -174,15 +177,22 @@ public:
 	
 	FClimbingPawnModeBase& GetMode(EClimbingPawnModeType ModeType) { return ModeStorage->Get(ModeType); }
 
-public:
 
-	float RunSpeedValue = 0;
+private:
+
+	float CurrentRunTime = 0;
 
 	float MaxRunTime = 0;
+
+	float MinRunVelocyty = 0;
 
 private:
 
 	EClimbingPawnModeType CurrentClimbingMode;
 	
 	std::unique_ptr<TClimbingModeStorage> ModeStorage;
+
+	FTimerHandle RunSpeedTimer;
+
+	AClimbingCharacter* ClimbingChar;
 };

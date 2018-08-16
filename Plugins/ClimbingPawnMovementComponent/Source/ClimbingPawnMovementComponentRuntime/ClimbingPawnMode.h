@@ -43,7 +43,7 @@ public:
 
 	virtual void SetMode() {}
 
-	virtual void UnSetMode() {};
+	virtual void UnSetMode() {}
 
 	virtual bool CanSetMode() { return !bBlockState; }
 
@@ -82,7 +82,7 @@ private:
 class FClimbingPawnModeRun : public FClimbingPawnModeBase
 {
 public:
-	FClimbingPawnModeRun(UClimbingPawnMovementComponent& MovementComponent) : FClimbingPawnModeBase(MovementComponent) {}
+	FClimbingPawnModeRun(UClimbingPawnMovementComponent& MovementComponent);
 
 	virtual EClimbingPawnModeType GetType() const override { return EClimbingPawnModeType::Run; }
 
@@ -90,15 +90,19 @@ public:
 
 	virtual bool DoJump(bool bReplayingMoves, bool& ReturnValue) override;
 
+	
+
 private:
 
 	inline void DefineClimbMode();
 
-	inline void DefineRunSpeed(float DeltaTime);
-
 	inline void FallingControl();
 
+	void DefineRunSpeed(float DeltaTime);
+
 private:
+
+	
 
 };
 

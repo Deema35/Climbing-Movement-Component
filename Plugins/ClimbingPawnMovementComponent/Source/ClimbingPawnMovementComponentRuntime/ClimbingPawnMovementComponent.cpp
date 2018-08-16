@@ -37,10 +37,19 @@ void UClimbingPawnMovementComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
+	ClimbingChar = Cast<AClimbingCharacter>(GetPawnOwner());
+
 	float MinRunTime;
 
 	RunVelocytyCurve.GetRichCurve()->GetTimeRange(MinRunTime, MaxRunTime);
+
+	float MaxRunVelocyty;
+
+	RunVelocytyCurve.GetRichCurve()->GetValueRange(MinRunVelocyty, MaxRunVelocyty);
+
 }
+
+
 
 
 
@@ -92,7 +101,6 @@ float UClimbingPawnMovementComponent::GetMaxSpeed() const
 {
 	float MaxSpeed;
 	
-	float CurrentRunTime = MaxRunTime * RunSpeedValue;
 	
 	if (MovementMode == EMovementMode::MOVE_Walking || MovementMode == EMovementMode::MOVE_NavWalking || MovementMode == EMovementMode::MOVE_Falling)
 	{

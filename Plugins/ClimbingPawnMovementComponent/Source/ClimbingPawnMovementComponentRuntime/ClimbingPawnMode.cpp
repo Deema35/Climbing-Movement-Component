@@ -108,9 +108,13 @@ void FClimbingPawnModeBase::UnblockState(FClimbingPawnModeBase* ClimbingPawnMode
 //FClimbingPawnModeRun
 //***********************************************
 
-bool FClimbingPawnModeRun::Tick(float DeltaTime)
+FClimbingPawnModeRun::FClimbingPawnModeRun(UClimbingPawnMovementComponent& MovementComponent) : FClimbingPawnModeBase(MovementComponent)
 {
 	
+}
+
+bool FClimbingPawnModeRun::Tick(float DeltaTime)
+{
 	DefineRunSpeed(DeltaTime);
 	DefineClimbMode();
 	FallingControl();
@@ -176,6 +180,7 @@ bool FClimbingPawnModeRun::DoJump(bool bReplayingMoves, bool& ReturnValue)
 
 }
 
+
 void FClimbingPawnModeRun::DefineClimbMode()
 {
 
@@ -198,32 +203,24 @@ void FClimbingPawnModeRun::DefineClimbMode()
 
 void FClimbingPawnModeRun::DefineRunSpeed(float DeltaTime)
 {
-	AClimbingCharacter* ClimbingChar = Cast<AClimbingCharacter>(MovementComponent.GetPawnOwner());
-
-	if (ClimbingChar->InputComponent->GetAxisValue(TEXT("MoveForward")) > 0 && !ClimbingChar->bIsCrouched && !MovementComponent.IsFalling())
+	
+	if (MovementComponent.IsFalling())
 	{
-		if (MovementComponent.RunSpeedValue < 1)
-		{
-			float CurrentRunTime = MovementComponent.MaxRunTime * MovementComponent.RunSpeedValue;
+		return;
+	}
 
-			CurrentRunTime += DeltaTime;
 
-			MovementComponent.RunSpeedValue = CurrentRunTime / MovementComponent.MaxRunTime;
-		}
-		
+	else if (MovementComponent.ClimbingChar->bIsCrouched || MovementComponent.Velocity.Size() < MovementComponent.MinRunVelocyty - 100)
+	{
+		MovementComponent.CurrentRunTime = 0;
+	}
+
+	if (MovementComponent.CurrentRunTime < MovementComponent.MaxRunTime && MovementComponent.ClimbingChar->InputComponent->GetAxisValue(TEXT("MoveForward")) > 0)
+	{
+		MovementComponent.CurrentRunTime += DeltaTime;
 
 	}
 
-	float Velocyty = MovementComponent.Velocity.Size();
-	float MaxRunVelocyty;
-	float MinRunVelocyty;
-
-	MovementComponent.RunVelocytyCurve.GetRichCurve()->GetValueRange(MinRunVelocyty, MaxRunVelocyty);
-
-	if (Velocyty < MinRunVelocyty - 100 || ClimbingChar->bIsCrouched) //This mean character stop
-	{
-		MovementComponent.RunSpeedValue = 0;
-	}
 }
 
 
@@ -279,7 +276,7 @@ void FClimbingPawnModeClimb::SetMode()
 
 	ClimbingChar->BlockCameraYawRangeFromCharacter(150, 150);
 
-	MovementComponent.RunSpeedValue = 0;
+	MovementComponent.CurrentRunTime = 0;
 }
 
 void FClimbingPawnModeClimb::UnSetMode()

@@ -17,11 +17,17 @@ enum class EPointLocation : uint8
 UCLASS()
 class CLIMBINGPAWNMOVEMENTCOMPONENTRUNTIME_API AClimbingCharacter : public ACharacter
 {
+	friend class UClimbingPawnMovementComponent;
+
 	GENERATED_BODY()
 public:
 
 	UPROPERTY(Category = Character, VisibleAnywhere, BlueprintReadOnly)
-		class USpringArmComponent* CameraSpringArm;
+		class USpringArmComponent* ThridCameraSpringArm;
+
+	UPROPERTY(Category = Character, VisibleAnywhere, BlueprintReadOnly)
+		class USpringArmComponent* FistCameraSpringArm;
+
 	UPROPERTY(Category = Character, VisibleAnywhere, BlueprintReadOnly)
 		class UCameraComponent* Camera;
 
@@ -83,7 +89,7 @@ public:
 
 public:
 
-	bool bFistPirsonView;
+	bool bFistPirsonView = true;
 
 	class AOverlapObject* OverlopObject;
 
@@ -91,12 +97,6 @@ private:
 	/** Pointer to climbing movement component*/
 	UPROPERTY(Category = Character, VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 		class  UClimbingPawnMovementComponent* ClimbingMovement;
-
-		USkeletalMeshComponent* ClimbMesh;
-
-		UCapsuleComponent* ClimbCapsule;
-
-		friend class UClimbingPawnMovementComponent;
 
 		float LeftYawRange;
 

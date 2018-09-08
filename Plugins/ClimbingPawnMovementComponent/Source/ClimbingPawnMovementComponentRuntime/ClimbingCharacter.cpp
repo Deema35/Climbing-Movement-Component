@@ -21,25 +21,54 @@ AClimbingCharacter::AClimbingCharacter(const FObjectInitializer& ObjectInitializ
 
 	TArray<USkeletalMeshComponent*> Components;
 	GetComponents<USkeletalMeshComponent>(Components);
-	ClimbMesh = Components[0];
-
-	TArray<UCapsuleComponent*> ComponentsCaps;
-	GetComponents<UCapsuleComponent>(ComponentsCaps);
-	ClimbCapsule = ComponentsCaps[0];
+	USkeletalMeshComponent* ClimbMesh = Components[0];
 	
 
-	//Add Camera
-	CameraSpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraSpringArm"));
-	CameraSpringArm->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);
-	CameraSpringArm->SetRelativeLocationAndRotation(FVector(0.0f, 0.0f, 8.0f), FRotator(0.0f, 0.0f, 0.0f));
-	CameraSpringArm->TargetArmLength = 300.f;
-	CameraSpringArm->bUsePawnControlRotation = true;
+	//Add Thrid pirson Camera arm
+	ThridCameraSpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("ThridCameraSpringArm"));
+	ThridCameraSpringArm->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);
+	ThridCameraSpringArm->SetRelativeLocationAndRotation(FVector(0.0f, 0.0f, 8.0f), FRotator(0.0f, 0.0f, 0.0f));
+	ThridCameraSpringArm->TargetArmLength = 300.f;
+	ThridCameraSpringArm->bUsePawnControlRotation = true;
+
+	//Add Fist pirson Camera arm
+	FistCameraSpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("FistCameraSpringArm"));
+	FistCameraSpringArm->AttachToComponent(ClimbMesh, FAttachmentTransformRules::KeepRelativeTransform, FName("head"));
+	FistCameraSpringArm->SetRelativeLocationAndRotation(FVector(0.0f, 12.0f, 0.0f), FRotator(0.0f, 90.0f, 270.0f));
+	FistCameraSpringArm->TargetArmLength = 0;
+	FistCameraSpringArm->bUsePawnControlRotation = true;
+	FistCameraSpringArm->bEnableCameraLag = true;
+
+	FistCameraSpringArm->CameraLagSpeed = 65;
+	FistCameraSpringArm->CameraLagMaxTimeStep = 0.5;
+
+	if (ClimbingMovement->GetCurrentClimbingMode() != EClimbingPawnModeType::Climb)
+	{
+		bUseControllerRotationYaw = true;
+		ClimbingMovement->bOrientRotationToMovement = false;
+
+	}
 	
+	//AddCamera
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("ClimbCamera"));
-	Camera->AttachToComponent(CameraSpringArm, FAttachmentTransformRules::KeepRelativeTransform, USpringArmComponent::SocketName);
-	Camera->bUsePawnControlRotation = true;
-	bUseControllerRotationYaw = false;
 
+	Camera->bUsePawnControlRotation = true;
+	
+	if (bFistPirsonView)
+	{
+		Camera->AttachToComponent(FistCameraSpringArm, FAttachmentTransformRules::KeepRelativeTransform, USpringArmComponent::SocketName);
+		
+		bUseControllerRotationYaw = true;
+		ClimbingMovement->bOrientRotationToMovement = false;
+			
+	}
+	else
+	{
+		Camera->AttachToComponent(ThridCameraSpringArm, FAttachmentTransformRules::KeepRelativeTransform, USpringArmComponent::SocketName);
+		
+		bUseControllerRotationYaw = false;
+		ClimbingMovement->bOrientRotationToMovement = true;
+	}
 	
 	
 }
@@ -261,12 +290,12 @@ void AClimbingCharacter::ChangeView(bool FistPirson)
 {
 	if (FistPirson == bFistPirsonView) return;
 
+	Camera->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
+
 	if (FistPirson)
 	{
-		Camera->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
-		Camera->AttachToComponent(ClimbMesh, FAttachmentTransformRules::KeepRelativeTransform, FName("head"));
-		GetWorld()->GetFirstPlayerController()->SetControlRotation(GetActorRotation());
-		Camera->SetRelativeLocation(FVector(0, 10, 0));
+		Camera->AttachToComponent(FistCameraSpringArm, FAttachmentTransformRules::SnapToTargetNotIncludingScale, FName("SpringEndpoint"));
+		
 		bFistPirsonView = true;
 		
 		if (ClimbingMovement->GetCurrentClimbingMode() != EClimbingPawnModeType::Climb)
@@ -278,9 +307,10 @@ void AClimbingCharacter::ChangeView(bool FistPirson)
 	}
 	else
 	{
-		Camera->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
-		Camera->AttachToComponent(CameraSpringArm, FAttachmentTransformRules::SnapToTargetNotIncludingScale, FName("SpringEndpoint"));
+		Camera->AttachToComponent(ThridCameraSpringArm, FAttachmentTransformRules::SnapToTargetNotIncludingScale, FName("SpringEndpoint"));
+
 		bFistPirsonView = false;
+
 		if (ClimbingMovement->GetCurrentClimbingMode() != EClimbingPawnModeType::Climb)
 		{
 			bUseControllerRotationYaw = false;

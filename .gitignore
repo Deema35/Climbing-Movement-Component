@@ -57,3 +57,8 @@ Build/*
 
 # Cache files for the editor to use
 DerivedDataCache/*
+
+#Plugin directory
+Plugins/ClimbingPawnMovementComponent/Intermediate/*
+Plugins/ClimbingPawnMovementComponent/Binaries/*
+!Plugins/ClimbingPawnMovementComponent/Binaries/Win64/*.dll
